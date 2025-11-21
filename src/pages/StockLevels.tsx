@@ -50,8 +50,8 @@ export default function StockLevels() {
 
     const filtered = inventory.filter(
       (item) =>
-        item.products?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.products?.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sku.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredInventory(filtered);
   }, [searchTerm, inventory]);
@@ -120,10 +120,10 @@ export default function StockLevels() {
                   {filteredInventory.map((item) => (
                     <TableRow key={`${item.product_id}-${item.marketplace_id}`}>
                       <TableCell>
-                        <div className="font-medium">{item.products?.name || 'Unknown Product'}</div>
+                        <div className="font-medium">{item.product_name || 'Unknown Product'}</div>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{item.products?.sku || 'N/A'}</TableCell>
-                      <TableCell>{item.marketplaces?.name || 'Unknown Channel'}</TableCell>
+                      <TableCell className="font-mono text-sm">{item.sku || 'N/A'}</TableCell>
+                      <TableCell>{item.marketplace_name || 'Unknown Channel'}</TableCell>
                       <TableCell className="text-right font-medium">{item.quantity}</TableCell>
                       <TableCell className="text-right">${item.price}</TableCell>
                       <TableCell>
