@@ -930,6 +930,58 @@ app.get('/api/analytics', async (req, res) => {
     }
   });
 
+  // Report scheduling endpoints
+  app.post('/api/reports/schedule', async (req, res) => {
+    const { reportConfig, scheduleConfig } = req.body;
+  
+    try {
+      const client = await pool.connect();
+  
+      // Insert scheduled report
+      const result = await client.query(
+        'INSERT INTO scheduled_reports (name, config, frequency, schedule_time, email, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
+        [
+          reportConfig.name,
+          JSON.stringify(reportConfig),
+          scheduleConfig.frequency,
+          scheduleConfig.time,
+          scheduleConfig.email
+        ]
+      );
+  
+      client.release();
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error scheduling report:', error);
+      res.status(500).json({ error: 'Failed to schedule report' });
+    }
+  });
+  
+  app.get('/api/reports/scheduled', async (req, res) => {
+    try {
+      const client = await pool.connect();
+      const result = await client.query('SELECT * FROM scheduled_reports ORDER BY created_at DESC');
+      client.release();
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching scheduled reports:', error);
+      res.status(500).json({ error: 'Failed to fetch scheduled reports' });
+    }
+  });
+  
+  app.delete('/api/reports/scheduled/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const client = await pool.connect();
+      await client.query('DELETE FROM scheduled_reports WHERE id = $1', [id]);
+      client.release();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting scheduled report:', error);
+      res.status(500).json({ error: 'Failed to delete scheduled report' });
+    }
+  });
+  
   // Start server
   app.listen(port, '0.0.0.0', () => {
     console.log(`API server running on port ${port}`);

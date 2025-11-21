@@ -12,9 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Package, TrendingUp } from "lucide-react";
+import { Plus, Search, Edit, Package, TrendingUp, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { exportToCSV, formatCurrency, formatDate } from "@/lib/export";
 
 export default function ProductList() {
   const [products, setProducts] = useState<any[]>([]);
@@ -71,6 +72,25 @@ export default function ProductList() {
     }
   };
 
+  const handleExport = () => {
+    try {
+      const exportData = filteredProducts.map(product => ({
+        'Product Name': product.name,
+        'SKU': product.sku,
+        'Price': formatCurrency(product.base_price),
+        'Status': product.status,
+        'Created Date': formatDate(product.created_at),
+        'Updated Date': formatDate(product.updated_at),
+      }));
+
+      exportToCSV(exportData, `products-${new Date().toISOString().split('T')[0]}`);
+      toast.success("Products exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export products");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -78,10 +98,16 @@ export default function ProductList() {
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground mt-1">Manage your product inventory</p>
         </div>
-        <Button onClick={() => navigate("/products/add")} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={() => navigate("/products/add")} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       <Card>

@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { User, Settings as SettingsIcon, LogOut, UserCircle } from "lucide-react";
@@ -28,16 +29,19 @@ import ShippedOrders from "./pages/ShippedOrders";
 import Channels from "./pages/Channels";
 import AddChannel from "./pages/AddChannel";
 import Analytics from "./pages/Analytics";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import EditProduct from "./pages/EditProduct";
 import NotFound from "./pages/NotFound";
 import { NotificationBell } from "./components/NotificationBell";
+import { ThemeToggle } from "./components/ThemeToggle";
 import StockAdjustments from "./pages/StockAdjustments";
 import Returns from "./pages/Returns";
 import SyncSettings from "./pages/SyncSettings";
 import UserManagement from "./pages/UserManagement";
 import PerformanceAnalytics from "./pages/PerformanceAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGlobalKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const queryClient = new QueryClient();
 
@@ -129,11 +133,11 @@ const ChannelsSection = () => (
 const AnalyticsSection = () => (
   <Tabs defaultValue="reports" className="w-full">
     <TabsList className="grid w-full grid-cols-2">
-      <TabsTrigger value="reports">Reports</TabsTrigger>
+      <TabsTrigger value="reports">Custom Reports</TabsTrigger>
       <TabsTrigger value="performance">Performance</TabsTrigger>
     </TabsList>
     <TabsContent value="reports" className="mt-6">
-      <Analytics />
+      <Reports />
     </TabsContent>
     <TabsContent value="performance" className="mt-6">
       <PerformanceAnalytics />
@@ -141,66 +145,73 @@ const AnalyticsSection = () => (
   </Tabs>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col">
-              <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
-                <SidebarTrigger />
-                <div className="flex-1" />
-                <NotificationBell />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <UserCircle className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <SettingsIcon className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </header>
-              <main className="flex-1 p-6 bg-background">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/products" element={<ProductsSection />} />
-                  <Route path="/products/:id/edit" element={<EditProduct />} />
-                  <Route path="/inventory" element={<InventorySection />} />
-                  <Route path="/orders" element={<OrdersSection />} />
-                  <Route path="/channels" element={<ChannelsSection />} />
-                  <Route path="/analytics" element={<AnalyticsSection />} />
-                  <Route path="/users" element={<UserManagement />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useGlobalKeyboardShortcuts();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <SidebarProvider>
+              <div className="flex min-h-screen w-full">
+                <AppSidebar />
+                <div className="flex-1 flex flex-col">
+                  <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
+                    <SidebarTrigger />
+                    <div className="flex-1" />
+                    <NotificationBell />
+                    <ThemeToggle />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <User className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <UserCircle className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <SettingsIcon className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log out</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </header>
+                  <main className="flex-1 p-6 bg-background">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/products" element={<ProductsSection />} />
+                      <Route path="/products/:id/edit" element={<EditProduct />} />
+                      <Route path="/inventory" element={<InventorySection />} />
+                      <Route path="/orders" element={<OrdersSection />} />
+                      <Route path="/channels" element={<ChannelsSection />} />
+                      <Route path="/analytics" element={<AnalyticsSection />} />
+                      <Route path="/users" element={<UserManagement />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </div>
+              </div>
+            </SidebarProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Categories() {
   const [categories, setCategories] = useState<any[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -28,6 +30,24 @@ export default function Categories() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  const filterCategories = useCallback(() => {
+    if (!searchTerm) {
+      setFilteredCategories(categories);
+      return;
+    }
+
+    const filtered = categories.filter(
+      (category) =>
+        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+    setFilteredCategories(filtered);
+  }, [searchTerm, categories]);
+
+  useEffect(() => {
+    filterCategories();
+  }, [filterCategories]);
 
   const fetchCategories = async () => {
     try {
@@ -192,11 +212,27 @@ export default function Categories() {
           <CardTitle>Category List</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <Label htmlFor="search" className="sr-only">Search categories</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Search by name or description..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading categories...</div>
-          ) : categories.length === 0 ? (
+          ) : filteredCategories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No categories found. Add your first category to get started.
+              {searchTerm ? "No categories found matching your search." : "No categories found. Add your first category to get started."}
             </div>
           ) : (
             <div className="rounded-md border">
@@ -209,7 +245,7 @@ export default function Categories() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.map((category) => (
+                  {filteredCategories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.description || "-"}</TableCell>

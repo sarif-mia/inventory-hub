@@ -121,6 +121,21 @@ CREATE TABLE notifications (
   data JSONB
 );
 
+-- Create scheduled_reports table
+CREATE TABLE scheduled_reports (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  config JSONB NOT NULL,
+  frequency TEXT NOT NULL, -- 'daily', 'weekly', 'monthly'
+  schedule_time TIME NOT NULL,
+  email TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_run TIMESTAMP WITH TIME ZONE,
+  next_run TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
 -- Create indexes for performance
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_category ON products(category_id);

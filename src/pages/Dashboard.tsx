@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { StatCard } from "@/components/Dashboard/StatCard";
 import { Package, ShoppingCart, DollarSign, TrendingUp, Store } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -81,6 +82,7 @@ import {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeOrders: 0,
@@ -99,6 +101,7 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       // Fetch dashboard stats
       const statsData = await fetchDashboardStats();
       setStats({
@@ -146,6 +149,8 @@ export default function Dashboard() {
     } catch (error) {
       toast.error("Failed to load dashboard data");
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,34 +162,55 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Products"
-          value={stats.totalProducts.toString()}
-          change="+12% from last month"
-          icon={Package}
-          trend="up"
-        />
-        <StatCard
-          title="Active Orders"
-          value={stats.activeOrders.toString()}
-          change="+8% from last week"
-          icon={ShoppingCart}
-          trend="up"
-        />
-        <StatCard
-          title="Low Stock Items"
-          value={stats.lowStockCount.toString()}
-          change="Need attention"
-          icon={TrendingUp}
-          trend="down"
-        />
-        <StatCard
-          title="Connected Channels"
-          value={stats.connectedChannels.toString()}
-          change={stats.connectedChannels > 0 ? "Active" : "Add channels"}
-          icon={Store}
-          trend="up"
-        />
+        {loading ? (
+          <>
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Total Products"
+              value={stats.totalProducts.toString()}
+              change="+12% from last month"
+              icon={Package}
+              trend="up"
+            />
+            <StatCard
+              title="Active Orders"
+              value={stats.activeOrders.toString()}
+              change="+8% from last week"
+              icon={ShoppingCart}
+              trend="up"
+            />
+            <StatCard
+              title="Low Stock Items"
+              value={stats.lowStockCount.toString()}
+              change="Need attention"
+              icon={TrendingUp}
+              trend="down"
+            />
+            <StatCard
+              title="Connected Channels"
+              value={stats.connectedChannels.toString()}
+              change={stats.connectedChannels > 0 ? "Active" : "Add channels"}
+              icon={Store}
+              trend="up"
+            />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -193,15 +219,22 @@ export default function Dashboard() {
             <CardTitle>Sales Trend (Last 7 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesTrendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -210,7 +243,12 @@ export default function Dashboard() {
             <CardTitle>Orders by Channel</CardTitle>
           </CardHeader>
           <CardContent>
-            {channelData.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+            ) : channelData.length === 0 ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 No channel data available
               </div>
@@ -235,7 +273,12 @@ export default function Dashboard() {
             <CardTitle>Order Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            {orderStatusData.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-64 w-full rounded-full mx-auto" />
+              </div>
+            ) : orderStatusData.length === 0 ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 No order data available
               </div>
@@ -294,7 +337,26 @@ export default function Dashboard() {
           <CardTitle>Recent Orders</CardTitle>
         </CardHeader>
         <CardContent>
-          {recentOrders.length === 0 ? (
+          {loading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-5 gap-4 pb-2 border-b">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-14" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="grid grid-cols-5 gap-4 py-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-18" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-4 w-14" />
+                </div>
+              ))}
+            </div>
+          ) : recentOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               No orders yet. Connect a channel to start receiving orders.
             </p>

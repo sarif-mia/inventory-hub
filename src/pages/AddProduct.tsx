@@ -20,6 +20,7 @@ export default function AddProduct() {
     cost_price: "",
     weight: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,11 +43,42 @@ export default function AddProduct() {
     }
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Product name is required";
+    }
+
+    if (!formData.sku.trim()) {
+      newErrors.sku = "SKU is required";
+    } else if (formData.sku.length < 3) {
+      newErrors.sku = "SKU must be at least 3 characters";
+    }
+
+    if (!formData.base_price) {
+      newErrors.base_price = "Base price is required";
+    } else if (parseFloat(formData.base_price) <= 0) {
+      newErrors.base_price = "Base price must be greater than 0";
+    }
+
+    if (formData.cost_price && parseFloat(formData.cost_price) <= 0) {
+      newErrors.cost_price = "Cost price must be greater than 0";
+    }
+
+    if (formData.weight && parseFloat(formData.weight) <= 0) {
+      newErrors.weight = "Weight must be greater than 0";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.sku || !formData.base_price) {
-      toast.error("Please fill in all required fields");
+    if (!validateForm()) {
+      toast.error("Please fix the errors in the form");
       return;
     }
 
@@ -99,10 +131,15 @@ export default function AddProduct() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: "" });
+                }}
                 placeholder="e.g. Wireless Headphones"
+                className={errors.name ? "border-destructive" : ""}
                 required
               />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
             </div>
 
             <div className="space-y-2">
@@ -110,10 +147,15 @@ export default function AddProduct() {
               <Input
                 id="sku"
                 value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, sku: e.target.value });
+                  if (errors.sku) setErrors({ ...errors, sku: "" });
+                }}
                 placeholder="e.g. WH-001"
+                className={errors.sku ? "border-destructive" : ""}
                 required
               />
+              {errors.sku && <p className="text-sm text-destructive">{errors.sku}</p>}
             </div>
 
             <div className="space-y-2">
@@ -151,10 +193,15 @@ export default function AddProduct() {
                   type="number"
                   step="0.01"
                   value={formData.base_price}
-                  onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, base_price: e.target.value });
+                    if (errors.base_price) setErrors({ ...errors, base_price: "" });
+                  }}
                   placeholder="0.00"
+                  className={errors.base_price ? "border-destructive" : ""}
                   required
                 />
+                {errors.base_price && <p className="text-sm text-destructive">{errors.base_price}</p>}
               </div>
 
               <div className="space-y-2">
@@ -164,9 +211,14 @@ export default function AddProduct() {
                   type="number"
                   step="0.01"
                   value={formData.cost_price}
-                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, cost_price: e.target.value });
+                    if (errors.cost_price) setErrors({ ...errors, cost_price: "" });
+                  }}
                   placeholder="0.00"
+                  className={errors.cost_price ? "border-destructive" : ""}
                 />
+                {errors.cost_price && <p className="text-sm text-destructive">{errors.cost_price}</p>}
               </div>
             </div>
 
@@ -177,9 +229,14 @@ export default function AddProduct() {
                 type="number"
                 step="0.01"
                 value={formData.weight}
-                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, weight: e.target.value });
+                  if (errors.weight) setErrors({ ...errors, weight: "" });
+                }}
                 placeholder="0.00"
+                className={errors.weight ? "border-destructive" : ""}
               />
+              {errors.weight && <p className="text-sm text-destructive">{errors.weight}</p>}
             </div>
 
             <div className="flex gap-3 pt-4">

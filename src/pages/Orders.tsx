@@ -12,8 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Package } from "lucide-react";
+import { Search, Package, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportToCSV, formatCurrency, formatDate } from "@/lib/export";
 
 export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -72,11 +73,36 @@ export default function Orders() {
     }
   };
 
+  const handleExport = () => {
+    try {
+      const exportData = filteredOrders.map(order => ({
+        'Order Number': order.order_number,
+        'Customer Name': order.customer_name,
+        'Customer Email': order.customer_email || '',
+        'Status': order.status,
+        'Total': formatCurrency(order.total),
+        'Order Date': formatDate(order.created_at),
+      }));
+
+      exportToCSV(exportData, `orders-${new Date().toISOString().split('T')[0]}`);
+      toast.success("Orders exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export orders");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Orders</h1>
-        <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Orders</h1>
+          <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
+        </div>
+        <Button variant="outline" onClick={handleExport} className="gap-2">
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
       <Card>
