@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: market-sync-db
+    restart: always
+    environment:
+      POSTGRES_DB: market_sync
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: market-sync-backend
+    ports:
+      - "3006:3001"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@db:5432/market_sync
+      - NODE_ENV=production
+
+  app:
+    build: .
+    container_name: market-sync-app
+    ports:
+      - "3005:80"
+    depends_on:
+      - db
+      - backend
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@db:5432/market_sync
+      - NODE_ENV=production
+
+volumes:
+  postgres_data:

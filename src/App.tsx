@@ -1,0 +1,206 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { User, Settings as SettingsIcon, LogOut, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Dashboard from "./pages/Dashboard";
+import ProductList from "./pages/ProductList";
+import AddProduct from "./pages/AddProduct";
+import Categories from "./pages/Categories";
+import BulkUpload from "./pages/BulkUpload";
+import StockLevels from "./pages/StockLevels";
+import LowStock from "./pages/LowStock";
+import Orders from "./pages/Orders";
+import PendingOrders from "./pages/PendingOrders";
+import ShippedOrders from "./pages/ShippedOrders";
+import Channels from "./pages/Channels";
+import AddChannel from "./pages/AddChannel";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import EditProduct from "./pages/EditProduct";
+import NotFound from "./pages/NotFound";
+import { NotificationBell } from "./components/NotificationBell";
+import StockAdjustments from "./pages/StockAdjustments";
+import Returns from "./pages/Returns";
+import SyncSettings from "./pages/SyncSettings";
+import UserManagement from "./pages/UserManagement";
+import PerformanceAnalytics from "./pages/PerformanceAnalytics";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const queryClient = new QueryClient();
+
+// Tabbed components for each section
+const ProductsSection = () => (
+  <Tabs defaultValue="all" className="w-full">
+    <TabsList className="grid w-full grid-cols-4">
+      <TabsTrigger value="all">All Products</TabsTrigger>
+      <TabsTrigger value="add">Add Product</TabsTrigger>
+      <TabsTrigger value="categories">Categories</TabsTrigger>
+      <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
+    </TabsList>
+    <TabsContent value="all" className="mt-6">
+      <ProductList />
+    </TabsContent>
+    <TabsContent value="add" className="mt-6">
+      <AddProduct />
+    </TabsContent>
+    <TabsContent value="categories" className="mt-6">
+      <Categories />
+    </TabsContent>
+    <TabsContent value="bulk" className="mt-6">
+      <BulkUpload />
+    </TabsContent>
+  </Tabs>
+);
+
+const InventorySection = () => (
+  <Tabs defaultValue="levels" className="w-full">
+    <TabsList className="grid w-full grid-cols-3">
+      <TabsTrigger value="levels">Stock Levels</TabsTrigger>
+      <TabsTrigger value="low-stock">Low Stock</TabsTrigger>
+      <TabsTrigger value="adjustments">Stock Adjustments</TabsTrigger>
+    </TabsList>
+    <TabsContent value="levels" className="mt-6">
+      <StockLevels />
+    </TabsContent>
+    <TabsContent value="low-stock" className="mt-6">
+      <LowStock />
+    </TabsContent>
+    <TabsContent value="adjustments" className="mt-6">
+      <StockAdjustments />
+    </TabsContent>
+  </Tabs>
+);
+
+const OrdersSection = () => (
+  <Tabs defaultValue="all" className="w-full">
+    <TabsList className="grid w-full grid-cols-4">
+      <TabsTrigger value="all">All Orders</TabsTrigger>
+      <TabsTrigger value="pending">Pending</TabsTrigger>
+      <TabsTrigger value="shipped">Shipped</TabsTrigger>
+      <TabsTrigger value="returns">Returns</TabsTrigger>
+    </TabsList>
+    <TabsContent value="all" className="mt-6">
+      <Orders />
+    </TabsContent>
+    <TabsContent value="pending" className="mt-6">
+      <PendingOrders />
+    </TabsContent>
+    <TabsContent value="shipped" className="mt-6">
+      <ShippedOrders />
+    </TabsContent>
+    <TabsContent value="returns" className="mt-6">
+      <Returns />
+    </TabsContent>
+  </Tabs>
+);
+
+const ChannelsSection = () => (
+  <Tabs defaultValue="connected" className="w-full">
+    <TabsList className="grid w-full grid-cols-3">
+      <TabsTrigger value="connected">Connected</TabsTrigger>
+      <TabsTrigger value="add">Add Channel</TabsTrigger>
+      <TabsTrigger value="sync">Sync Settings</TabsTrigger>
+    </TabsList>
+    <TabsContent value="connected" className="mt-6">
+      <Channels />
+    </TabsContent>
+    <TabsContent value="add" className="mt-6">
+      <AddChannel />
+    </TabsContent>
+    <TabsContent value="sync" className="mt-6">
+      <SyncSettings />
+    </TabsContent>
+  </Tabs>
+);
+
+const AnalyticsSection = () => (
+  <Tabs defaultValue="reports" className="w-full">
+    <TabsList className="grid w-full grid-cols-2">
+      <TabsTrigger value="reports">Reports</TabsTrigger>
+      <TabsTrigger value="performance">Performance</TabsTrigger>
+    </TabsList>
+    <TabsContent value="reports" className="mt-6">
+      <Analytics />
+    </TabsContent>
+    <TabsContent value="performance" className="mt-6">
+      <PerformanceAnalytics />
+    </TabsContent>
+  </Tabs>
+);
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full">
+            <AppSidebar />
+            <div className="flex-1 flex flex-col">
+              <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
+                <SidebarTrigger />
+                <div className="flex-1" />
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </header>
+              <main className="flex-1 p-6 bg-background">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/products" element={<ProductsSection />} />
+                  <Route path="/products/:id/edit" element={<EditProduct />} />
+                  <Route path="/inventory" element={<InventorySection />} />
+                  <Route path="/orders" element={<OrdersSection />} />
+                  <Route path="/channels" element={<ChannelsSection />} />
+                  <Route path="/analytics" element={<AnalyticsSection />} />
+                  <Route path="/users" element={<UserManagement />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </div>
+        </SidebarProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
