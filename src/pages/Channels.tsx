@@ -2,34 +2,49 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CheckCircle2, XCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { apiClient } from "@/lib/api";
+import { Marketplace } from "@/types/api";
 
 export default function Channels() {
-  const [marketplaces, setMarketplaces] = useState<any[]>([]);
+  const [marketplaces, setMarketplaces] = useState<Marketplace[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchMarketplaces();
   }, []);
 
-  const fetchMarketplaces = async () => {
+  const fetchMarketplaces = async (isRetry = false) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/marketplaces');
-      if (!response.ok) {
-        throw new Error('Failed to fetch marketplaces');
+      if (isRetry) {
+        setRetrying(true);
+        setError(null);
+      } else {
+        setLoading(true);
       }
-      const data = await response.json();
+
+      const data = await apiClient.getMarketplaces();
       setMarketplaces(data.sort((a, b) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime()));
-    } catch (error: any) {
-      toast.error("Failed to load channels");
+      setError(null);
+    } catch (error: unknown) {
+      const errorMessage = "Failed to load channels";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    fetchMarketplaces(true);
   };
 
   const availableChannels = [
@@ -42,14 +57,37 @@ export default function Channels() {
   ];
 
   const connectedTypes = marketplaces.map(m => m.type);
-  const availableToConnect = availableChannels.filter(c => !connectedTypes.includes(c.type));
+  const availableToConnect = availableChannels.filter(c => !connectedTypes.includes(c.type as any));
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sales Channels</h1>
-        <p className="text-muted-foreground mt-1">Connect and manage your marketplace integrations</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Sales Channels</h1>
+          <p className="text-muted-foreground mt-1">Connect and manage your marketplace integrations</p>
+        </div>
+        {error && (
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
+            disabled={retrying}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+            {retrying ? 'Retrying...' : 'Retry'}
+          </Button>
+        )}
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Please try again or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading channels...</div>

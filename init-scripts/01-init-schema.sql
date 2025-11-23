@@ -1,11 +1,11 @@
--- Create categories table
--- Ensure pgcrypto extension for gen_random_uuid
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Enable pgcrypto extension for UUID generation
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Create categories table
 CREATE TABLE categories (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
-  parent_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  parent_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -30,7 +30,7 @@ CREATE TABLE marketplaces (
   store_url TEXT,
   connected_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   last_sync TIMESTAMP WITH TIME ZONE,
-  settings JSONB DEFAULT '{}'::jsonb,
+  settings JSONB DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -38,17 +38,17 @@ CREATE TABLE marketplaces (
 -- Create products table
 CREATE TABLE products (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  sku TEXT NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  sku VARCHAR(255) NOT NULL UNIQUE,
   description TEXT,
-  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-  supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-  base_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  cost_price DECIMAL(10, 2),
-  weight DECIMAL(10, 2),
+  category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
+  supplier_id UUID REFERENCES suppliers(id) ON DELETE RESTRICT,
+  base_price NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  cost_price NUMERIC(10, 2),
+  weight NUMERIC(10, 2),
   dimensions TEXT,
   image_url TEXT,
-  status TEXT NOT NULL DEFAULT 'active', -- 'active', 'inactive', 'discontinued'
+  status VARCHAR(50) NOT NULL DEFAULT 'active', -- 'active', 'inactive', 'discontinued'
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -59,7 +59,7 @@ CREATE TABLE inventory (
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   marketplace_id UUID NOT NULL REFERENCES marketplaces(id) ON DELETE CASCADE,
   quantity INTEGER NOT NULL DEFAULT 0,
-  price DECIMAL(10, 2) NOT NULL,
+  price NUMERIC(10, 2) NOT NULL,
   low_stock_threshold INTEGER DEFAULT 10,
   status TEXT NOT NULL DEFAULT 'in_stock', -- 'in_stock', 'low_stock', 'out_of_stock'
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -70,18 +70,18 @@ CREATE TABLE inventory (
 -- Create orders table
 CREATE TABLE orders (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  order_number TEXT NOT NULL UNIQUE,
+  order_number VARCHAR(255) NOT NULL UNIQUE,
   marketplace_id UUID NOT NULL REFERENCES marketplaces(id) ON DELETE RESTRICT,
-  customer_name TEXT NOT NULL,
-  customer_email TEXT,
-  customer_phone TEXT,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_email VARCHAR(255),
+  customer_phone VARCHAR(50),
   shipping_address TEXT,
-  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'
-  payment_status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'paid', 'refunded'
-  subtotal DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  tax DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  shipping_cost DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  total DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'
+  payment_status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending', 'paid', 'refunded'
+  subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  tax NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  shipping_cost NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(10, 2) NOT NULL DEFAULT 0,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -93,8 +93,8 @@ CREATE TABLE order_items (
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
   quantity INTEGER NOT NULL,
-  unit_price DECIMAL(10, 2) NOT NULL,
-  total_price DECIMAL(10, 2) NOT NULL,
+  unit_price NUMERIC(10, 2) NOT NULL,
+  total_price NUMERIC(10, 2) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -102,7 +102,7 @@ CREATE TABLE order_items (
 CREATE TABLE stock_adjustments (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  marketplace_id UUID REFERENCES marketplaces(id) ON DELETE SET NULL,
+  marketplace_id UUID REFERENCES marketplaces(id) ON DELETE RESTRICT,
   adjustment_type TEXT NOT NULL, -- 'increase', 'decrease', 'correction'
   quantity INTEGER NOT NULL,
   reason TEXT,
@@ -110,9 +110,24 @@ CREATE TABLE stock_adjustments (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- Create users table for authentication
+CREATE TABLE users (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  role VARCHAR(50) NOT NULL DEFAULT 'user', -- 'admin', 'manager', 'user'
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_login TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
 -- Create notifications table
 CREATE TABLE notifications (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   type TEXT NOT NULL DEFAULT 'info',
@@ -131,7 +146,4 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_product ON order_items(product_id);
 
-INSERT INTO marketplaces (name, type, store_url) VALUES 
-  ('Shopify Store', 'shopify', 'sarifmia.myshopify.com/'),
-  ('Amazon Marketplace', 'amazon', 'https://amazon.com'),
-  ('eBay Store', 'ebay', 'https://ebay.com');
+-- Sample marketplaces removed - only real connections should be added through the UI

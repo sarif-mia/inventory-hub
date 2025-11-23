@@ -12,36 +12,53 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Package, TrendingUp } from "lucide-react";
+import { Plus, Search, Edit, Package, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "@/hooks/useCurrency";
+import { apiClient } from "@/lib/api";
+import { Product } from "@/types/api";
 
 export default function ProductList() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const { formatCurrency } = useCurrency();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (isRetry = false) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/products');
-      if (!response.ok) {
-        throw new Error('Failed to fetch products');
+      if (isRetry) {
+        setRetrying(true);
+        setError(null);
+      } else {
+        setLoading(true);
       }
-      const data = await response.json();
+
+      const data = await apiClient.getProducts();
       setProducts(data);
+      setError(null);
     } catch (error: unknown) {
-      toast.error("Failed to load products");
+      const errorMessage = "Failed to load products";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    fetchProducts(true);
   };
 
   const filterProducts = useCallback(() => {
@@ -78,11 +95,34 @@ export default function ProductList() {
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground mt-1">Manage your product inventory</p>
         </div>
-        <Button onClick={() => navigate("/products/add")} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          {error && (
+            <Button
+              onClick={handleRetry}
+              variant="outline"
+              size="sm"
+              disabled={retrying}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+              {retrying ? 'Retrying...' : 'Retry'}
+            </Button>
+          )}
+          <Button onClick={() => navigate("/products/add")} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Please try again or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -130,7 +170,7 @@ export default function ProductList() {
                         <div className="font-medium">{product.name}</div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{product.sku}</TableCell>
-                      <TableCell className="font-medium">${product.base_price}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(product.base_price)}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusColor(product.status)}>
                           {product.status}

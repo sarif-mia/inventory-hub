@@ -1,268 +1,103 @@
 # 🤝 Contributing to Inventory Hub
 
-Thank you for your interest in contributing to Inventory Hub! This document provides guidelines and information for contributors.
-
-## 📋 Table of Contents
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Submitting Changes](#submitting-changes)
-- [Reporting Issues](#reporting-issues)
+Thank you for contributing to Inventory Hub!
 
 ## 🤟 Code of Conduct
-
-This project follows a code of conduct to ensure a welcoming environment for all contributors. By participating, you agree to:
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Accept responsibility for mistakes
-- Show empathy towards other contributors
-- Help create a positive community
+Be respectful, inclusive, constructive. Focus on positive community.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Docker and Docker Compose
-- Git
-- A code editor (VS Code recommended)
+- Node.js 18+, Docker, Docker Compose, Git, VS Code
 
-### Local Development Setup
+### Setup
+```bash
+git clone https://github.com/your-username/inventory-hub.git
+cd inventory-hub
+npm install
+cp .env.example .env
+docker-compose up --build
+```
 
-1. **Fork and Clone**
-   ```bash
-   git clone https://github.com/your-username/inventory-hub.git
-   cd inventory-hub
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Environment Setup**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your local configuration
-   ```
-
-4. **Start Development Environment**
-   ```bash
-   # Start all services
-   docker-compose up --build
-
-   # Or start frontend only for development
-   npm run dev
-   ```
-
-5. **Verify Setup**
-   - Frontend: http://localhost:3005
-   - Backend API: http://localhost:3001
+Access: Frontend http://localhost:3005, Backend http://localhost:3001
 
 ## 🔄 Development Workflow
 
-### Branch Naming Convention
+### Branch Naming
 - `feature/description` - New features
 - `bugfix/description` - Bug fixes
-- `hotfix/description` - Critical fixes
-- `docs/description` - Documentation updates
+- `docs/description` - Documentation
 
-### Commit Message Format
+### Commit Format
 ```
 type(scope): description
 
-[optional body]
+[body]
 
-[optional footer]
+[footer]
 ```
 
-Types:
-- `feat`: New features
-- `fix`: Bug fixes
-- `docs`: Documentation
-- `style`: Code style changes
-- `refactor`: Code refactoring
-- `test`: Testing
-- `chore`: Maintenance
-
-Examples:
-```
-feat(auth): add user login functionality
-fix(api): resolve category creation error
-docs(readme): update installation instructions
-```
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ## 💻 Coding Standards
 
-### TypeScript Guidelines
-- Use TypeScript for all new code
-- Avoid `any` type - use proper type definitions
-- Use interfaces for object shapes
-- Use union types for variant values
-- Leverage utility types (`Partial`, `Pick`, `Omit`)
+### TypeScript
+- Use TypeScript, proper types, avoid `any`
+- Interfaces for objects, unions for variants
+- Utility types: `Partial`, `Pick`, etc.
 
-### React Best Practices
-- Use functional components with hooks
-- Implement proper error boundaries
-- Use custom hooks for shared logic
-- Follow component composition patterns
-- Implement proper loading states
+### React
+- Functional components with hooks
+- Error boundaries, custom hooks
+- Component composition
 
 ### Code Style
-- Follow ESLint configuration
-- Use meaningful variable and function names
-- Add JSDoc comments for complex functions
-- Keep functions small and focused
-- Use early returns for better readability
-
-### File Organization
-```
-src/
-├── components/     # Reusable UI components
-├── pages/         # Page-level components
-├── hooks/         # Custom React hooks
-├── lib/           # Utility functions
-├── integrations/  # External service integrations
-└── server/        # Backend API (if applicable)
-```
+- ESLint compliance
+- Meaningful names, JSDoc for complex functions
+- Small focused functions, early returns
 
 ## 🧪 Testing
 
-### Testing Strategy
-- Unit tests for utility functions
-- Integration tests for API endpoints
-- Component tests for React components
-- E2E tests for critical user flows
+### Strategy
+- Unit tests for functions
+- Integration for API
+- Component tests for React
+- E2E for flows
 
-### Running Tests
+### Commands
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
+npm test          # All tests
+npm run test:watch # Watch mode
+npm run test:coverage # With coverage
 ```
-
-### Writing Tests
-- Use descriptive test names
-- Follow AAA pattern (Arrange, Act, Assert)
-- Test both success and error scenarios
-- Mock external dependencies
-- Aim for high test coverage
 
 ## 📝 Submitting Changes
 
-### Pull Request Process
+### PR Process
+1. Create branch: `git checkout -b feature/name`
+2. Make changes, test, commit
+3. Push and create PR
+4. Await review
 
-1. **Create a Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make Changes**
-   - Write clean, tested code
-   - Update documentation if needed
-   - Ensure all tests pass
-
-3. **Commit Changes**
-   ```bash
-   git add .
-   git commit -m "feat: add your feature description"
-   ```
-
-4. **Push and Create PR**
-   ```bash
-   git push origin feature/your-feature-name
-   # Create PR on GitHub
-   ```
-
-5. **PR Requirements**
-   - Clear, descriptive title
-   - Detailed description of changes
-   - Screenshots for UI changes
-   - Tests pass
-   - No linting errors
-   - Documentation updated
-
-### PR Review Process
-- At least one maintainer review required
-- CI/CD checks must pass
-- Code follows project standards
-- Tests cover new functionality
-- No breaking changes without discussion
+### PR Requirements
+- Clear title/description
+- Screenshots for UI
+- Tests pass, no lint errors
+- Docs updated
 
 ## 🐛 Reporting Issues
 
 ### Bug Reports
-When reporting bugs, please include:
-- Clear title and description
-- Steps to reproduce
-- Expected vs actual behavior
-- Browser/OS information
-- Screenshots if applicable
-- Console errors/logs
+Include: Title, description, steps, expected/actual, browser/OS, screenshots, logs
 
 ### Feature Requests
-For new features, please provide:
-- Clear description of the feature
-- Use case and benefits
-- Mockups or examples if applicable
-- Acceptance criteria
+Description, use case, benefits, examples, criteria
 
-### Issue Labels
-- `bug` - Something isn't working
-- `enhancement` - New feature or improvement
-- `documentation` - Documentation updates
-- `help wanted` - Good for newcomers
-- `good first issue` - Beginner-friendly
-
-## 🔧 Development Tools
-
-### Recommended VS Code Extensions
-- TypeScript and JavaScript Language Features
-- ESLint
-- Prettier
-- Docker
-- GitLens
-
-### Useful Commands
-```bash
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-
-# Type checking
-npm run type-check
-
-# Build for production
-npm run build
-
-# Start development server
-npm run dev
-```
-
-## 📚 Resources
-
-- [React Documentation](https://react.dev)
-- [TypeScript Handbook](https://typescriptlang.org/docs/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-- [Shadcn/ui Components](https://ui.shadcn.com)
-- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+### Labels
+`bug`, `enhancement`, `documentation`, `help wanted`, `good first issue`
 
 ## 🙏 Recognition
 
-Contributors will be recognized in:
-- Repository contributors list
-- Changelog for significant contributions
-- Project documentation
+Contributors recognized in repo list, changelog, docs.
 
-Thank you for contributing to Inventory Hub! 🎉
+Thank you! 🎉

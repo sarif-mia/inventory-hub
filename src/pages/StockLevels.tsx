@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -12,34 +13,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Package, TrendingUp } from "lucide-react";
+import { Search, Package, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
+import { apiClient } from "@/lib/api";
+import { InventoryItemWithDetails } from "@/types/api";
 
 export default function StockLevels() {
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [filteredInventory, setFilteredInventory] = useState<any[]>([]);
+  const { formatCurrency } = useCurrency();
+  const [inventory, setInventory] = useState<InventoryItemWithDetails[]>([]);
+  const [filteredInventory, setFilteredInventory] = useState<InventoryItemWithDetails[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     fetchInventory();
   }, []);
 
-  const fetchInventory = async () => {
+  const fetchInventory = async (isRetry = false) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/inventory');
-      if (!response.ok) {
-        throw new Error('Failed to fetch inventory');
+      if (isRetry) {
+        setRetrying(true);
+        setError(null);
+      } else {
+        setLoading(true);
       }
-      const data = await response.json();
+
+      const data = await apiClient.getInventory() as InventoryItemWithDetails[];
       setInventory(data);
+      setError(null);
     } catch (error: unknown) {
-      toast.error("Failed to load inventory");
+      const errorMessage = "Failed to load inventory";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    fetchInventory(true);
   };
 
   const filterInventory = useCallback(() => {
@@ -71,10 +88,33 @@ export default function StockLevels() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Stock Levels</h1>
-        <p className="text-muted-foreground mt-1">Monitor inventory across all channels</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Stock Levels</h1>
+          <p className="text-muted-foreground mt-1">Monitor inventory across all channels</p>
+        </div>
+        {error && (
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
+            disabled={retrying}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+            {retrying ? 'Retrying...' : 'Retry'}
+          </Button>
+        )}
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Please try again or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -125,7 +165,7 @@ export default function StockLevels() {
                       <TableCell className="font-mono text-sm">{item.sku || 'N/A'}</TableCell>
                       <TableCell>{item.marketplace_name || 'Unknown Channel'}</TableCell>
                       <TableCell className="text-right font-medium">{item.quantity}</TableCell>
-                      <TableCell className="text-right">${item.price}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusColor(item.status)}>
                           {item.status.replace('_', ' ')}

@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function ShippedOrders() {
+  const { currencySymbol } = useCurrency();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,7 +65,7 @@ export default function ShippedOrders() {
                   </TableCell>
                   <TableCell>{order.customer_name}</TableCell>
                   <TableCell>{order.marketplaces?.name}</TableCell>
-                  <TableCell className="font-medium">${order.total}</TableCell>
+                  <TableCell className="font-medium">{currencySymbol}{order.total}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">In Transit</Badge>
                   </TableCell>

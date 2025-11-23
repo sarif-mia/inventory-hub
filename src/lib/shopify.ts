@@ -137,6 +137,11 @@ class ShopifyAPI {
     return this.adminRequest(`/orders/count.json${params}`);
   }
 
+  // Fetch shop info including currency
+  async getShopInfo() {
+    return this.adminRequest('/shop.json');
+  }
+
   // Storefront API methods for public data
   async getStorefrontProducts(first: number = 10, after?: string) {
     const query = `

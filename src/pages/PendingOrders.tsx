@@ -3,8 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function PendingOrders() {
+  const { currencySymbol } = useCurrency();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +85,7 @@ export default function PendingOrders() {
                   </TableCell>
                   <TableCell>{order.customer_name}</TableCell>
                   <TableCell>{order.marketplaces?.name}</TableCell>
-                  <TableCell className="font-medium">${order.total}</TableCell>
+                  <TableCell className="font-medium">{currencySymbol}{order.total}</TableCell>
                   <TableCell>
                     <Button
                       size="sm"

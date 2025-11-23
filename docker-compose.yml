@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -29,6 +27,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://admin:password123@db:5432/market_sync
       - NODE_ENV=production
+    command: sh -c "node scripts/create-admin-user.js && node dist/server/index.js"
 
   app:
     build: .
@@ -38,6 +37,8 @@ services:
     depends_on:
       - db
       - backend
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://admin:password123@db:5432/market_sync
       - NODE_ENV=production

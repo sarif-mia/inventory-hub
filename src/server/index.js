@@ -887,53 +887,116 @@ app.get('/api/analytics', async (req, res) => {
     console.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics data' });
   }
-  // Get notifications endpoint
-  app.get('/api/notifications', async (req, res) => {
-    try {
-      const client = await pool.connect();
-      const result = await client.query('SELECT * FROM notifications ORDER BY created_at DESC');
-      client.release();
-      res.json(result.rows);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      res.status(500).json({ error: 'Failed to fetch notifications' });
-    }
-  });
+});
 
-  // Mark notification as read
-  app.put('/api/notifications/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-      const client = await pool.connect();
-      const result = await client.query('UPDATE notifications SET is_read = true WHERE id = $1 RETURNING *', [id]);
-      client.release();
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Notification not found' });
-      }
-      res.json(result.rows[0]);
-    } catch (error) {
-      console.error('Error updating notification:', error);
-      res.status(500).json({ error: 'Failed to update notification' });
-    }
-  });
+// Get notifications endpoint
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM notifications ORDER BY created_at DESC');
+    client.release();
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
 
-  // Mark all as read
-  app.put('/api/notifications/mark-all-read', async (req, res) => {
-    try {
-      const client = await pool.connect();
-      await client.query('UPDATE notifications SET is_read = true WHERE is_read = false');
-      client.release();
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      res.status(500).json({ error: 'Failed to mark all notifications as read' });
+// Mark notification as read
+app.put('/api/notifications/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query('UPDATE notifications SET is_read = true WHERE id = $1 RETURNING *', [id]);
+    client.release();
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
     }
-  });
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    res.status(500).json({ error: 'Failed to update notification' });
+  }
+});
 
-  // Start server
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`API server running on port ${port}`);
-  });
+// Mark all as read
+app.put('/api/notifications/mark-all-read', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    await client.query('UPDATE notifications SET is_read = true WHERE is_read = false');
+    client.release();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+// Shopify API proxy routes for frontend
+app.get('/api/shopify/shop.json', async (req, res) => {
+  try {
+    const SHOPIFY_STORE_URL = process.env.VITE_SHOPIFY_STORE_URL || process.env.SHOPIFY_STORE_URL;
+    const SHOPIFY_ADMIN_API_TOKEN = process.env.VITE_SHOPIFY_ADMIN_API_TOKEN || process.env.SHOPIFY_ADMIN_API_TOKEN;
+
+    if (!SHOPIFY_STORE_URL || !SHOPIFY_ADMIN_API_TOKEN) {
+      return res.status(500).json({ error: 'Shopify credentials not configured' });
+    }
+
+    const url = `https://${SHOPIFY_STORE_URL.replace(/\/$/, '').replace(/^https?:\/\//, '')}/admin/api/2023-10/shop.json`;
+    const response = await fetch(url, {
+      headers: {
+        'X-Shopify-Access-Token': SHOPIFY_ADMIN_API_TOKEN,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: errorText });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Shopify API proxy error:', error);
+    res.status(500).json({ error: 'Failed to fetch shop data' });
+  }
+});
+
+// Generic Shopify API proxy
+app.all('/api/shopify/*', async (req, res) => {
+  try {
+    const SHOPIFY_STORE_URL = process.env.VITE_SHOPIFY_STORE_URL || process.env.SHOPIFY_STORE_URL;
+    const SHOPIFY_ADMIN_API_TOKEN = process.env.VITE_SHOPIFY_ADMIN_API_TOKEN || process.env.SHOPIFY_ADMIN_API_TOKEN;
+
+    if (!SHOPIFY_STORE_URL || !SHOPIFY_ADMIN_API_TOKEN) {
+      return res.status(500).json({ error: 'Shopify credentials not configured' });
+    }
+
+    const path = req.path.replace('/api/shopify', '');
+    const url = `https://${SHOPIFY_STORE_URL.replace(/\/$/, '').replace(/^https?:\/\//, '')}/admin/api/2023-10${path}`;
+
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        'X-Shopify-Access-Token': SHOPIFY_ADMIN_API_TOKEN,
+        'Content-Type': 'application/json',
+        ...req.headers,
+      },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: errorText });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Shopify API proxy error:', error);
+    res.status(500).json({ error: 'Failed to proxy Shopify API request' });
+  }
 });
 
 // Start server

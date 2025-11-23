@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -12,34 +13,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Package } from "lucide-react";
+import { Search, Package, RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
+import { apiClient } from "@/lib/api";
+import { Order } from "@/types/api";
 
 export default function Orders() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const { formatCurrency } = useCurrency();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (isRetry = false) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/orders');
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+      if (isRetry) {
+        setRetrying(true);
+        setError(null);
+      } else {
+        setLoading(true);
       }
-      const data = await response.json();
+
+      const data = await apiClient.getOrders();
       setOrders(data);
+      setError(null);
     } catch (error: unknown) {
-      toast.error("Failed to load orders");
+      const errorMessage = "Failed to load orders";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    fetchOrders(true);
   };
 
   const filterOrders = useCallback(() => {
@@ -74,10 +91,33 @@ export default function Orders() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Orders</h1>
-        <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Orders</h1>
+          <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
+        </div>
+        {error && (
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
+            disabled={retrying}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+            {retrying ? 'Retrying...' : 'Retry'}
+          </Button>
+        )}
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Please try again or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -132,7 +172,7 @@ export default function Orders() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${order.total}
+                        {formatCurrency(order.total)}
                       </TableCell>
                     </TableRow>
                   ))}

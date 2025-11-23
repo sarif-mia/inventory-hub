@@ -7,44 +7,51 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { db } from "@/integrations/database/client";
+import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  is_read: boolean;
-  created_at: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { Notification } from "@/types/api";
 
 export function NotificationBell() {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    if (isAuthenticated) {
+      fetchNotifications();
+    } else {
+      // Clear notifications when not authenticated
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated]);
 
   const fetchNotifications = async () => {
+    if (!isAuthenticated) return;
+
     try {
-      const response = await fetch('/api/notifications');
-      const data: Notification[] = await response.json();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      setLoading(true);
+      const data = await apiClient.getNotifications();
+      setNotifications(data || []);
+      setUnreadCount((data || []).filter(n => !n.is_read).length);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+      // Don't show error toast for auth failures
+      if (!(error instanceof Error) || !error.message.includes('401')) {
+        toast.error("Failed to load notifications");
+      }
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setLoading(false);
     }
   };
 
   const markAsRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_read: true })
-      });
+      await apiClient.markNotificationAsRead(id);
       fetchNotifications();
       toast.success("Notification marked as read");
     } catch (error) {
@@ -55,9 +62,7 @@ export function NotificationBell() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/notifications/mark-all-read', {
-        method: 'PUT'
-      });
+      await apiClient.markAllNotificationsAsRead();
       fetchNotifications();
       toast.success("All notifications marked as read");
     } catch (error) {

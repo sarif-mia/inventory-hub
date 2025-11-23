@@ -11,8 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function EditProduct() {
+  const { currencySymbol } = useCurrency();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -346,8 +348,8 @@ export default function EditProduct() {
                       <TableCell>{sale.orders?.order_number}</TableCell>
                       <TableCell>{sale.orders?.marketplaces?.name}</TableCell>
                       <TableCell>{sale.quantity}</TableCell>
-                      <TableCell>${parseFloat(sale.unit_price).toFixed(2)}</TableCell>
-                      <TableCell>${parseFloat(sale.total_price).toFixed(2)}</TableCell>
+                      <TableCell>{currencySymbol}{typeof sale.unit_price === 'string' ? (sale.unit_price as string).replace(/^\$/, '') : parseFloat(sale.unit_price).toFixed(2)}</TableCell>
+                      <TableCell>{currencySymbol}{typeof sale.total_price === 'string' ? (sale.total_price as string).replace(/^\$/, '') : parseFloat(sale.total_price).toFixed(2)}</TableCell>
                       <TableCell>{new Date(sale.orders?.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Badge>{sale.orders?.status}</Badge>

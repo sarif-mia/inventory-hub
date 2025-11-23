@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface ReturnOrder {
     id: number;
@@ -24,6 +25,7 @@ interface ReturnOrder {
 }
 
 export default function Returns() {
+    const { currencySymbol } = useCurrency();
     const [returns, setReturns] = useState<ReturnOrder[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -144,7 +146,7 @@ export default function Returns() {
                                             <TableCell className="font-medium">{returnOrder.order_number}</TableCell>
                                             <TableCell>{returnOrder.customer_name}</TableCell>
                                             <TableCell>{returnOrder.marketplace_name}</TableCell>
-                                            <TableCell className="text-right font-medium">${returnOrder.total}</TableCell>
+                                            <TableCell className="text-right font-medium">{currencySymbol}{returnOrder.total}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getStatusColor(returnOrder.status)}>
                                                     {returnOrder.status.charAt(0).toUpperCase() + returnOrder.status.slice(1)}

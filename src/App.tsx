@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { User, Settings as SettingsIcon, LogOut, UserCircle } from "lucide-react";
@@ -15,6 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import ProductList from "./pages/ProductList";
 import AddProduct from "./pages/AddProduct";
@@ -31,6 +33,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import EditProduct from "./pages/EditProduct";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 import { NotificationBell } from "./components/NotificationBell";
 import StockAdjustments from "./pages/StockAdjustments";
 import Returns from "./pages/Returns";
@@ -38,8 +41,87 @@ import SyncSettings from "./pages/SyncSettings";
 import UserManagement from "./pages/UserManagement";
 import PerformanceAnalytics from "./pages/PerformanceAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+// Authenticated App Content
+function AppContent() {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
+            <SidebarTrigger />
+            <div className="flex-1" />
+            <NotificationBell />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  {user?.first_name} {user?.last_name}
+                  <div className="text-xs text-muted-foreground font-normal">
+                    {user?.email}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <main className="flex-1 p-6 bg-background">
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/products" element={<ProductsSection />} />
+              <Route path="/products/add" element={<AddProduct />} />
+              <Route path="/products/:id/edit" element={<EditProduct />} />
+              <Route path="/inventory" element={<InventorySection />} />
+              <Route path="/inventory/low-stock" element={<LowStock />} />
+              <Route path="/orders" element={<OrdersSection />} />
+              <Route path="/orders/pending" element={<PendingOrders />} />
+              <Route path="/orders/shipped" element={<ShippedOrders />} />
+              <Route path="/channels" element={<ChannelsSection />} />
+              <Route path="/channels/add" element={<AddChannel />} />
+              <Route path="/analytics" element={<AnalyticsSection />} />
+              <Route path="/analytics/performance" element={<PerformanceAnalytics />} />
+              <Route path="/users" element={<UserManagement />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
 
 // Tabbed components for each section
 const ProductsSection = () => (
@@ -143,63 +225,35 @@ const AnalyticsSection = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col">
-              <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
-                <SidebarTrigger />
-                <div className="flex-1" />
-                <NotificationBell />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <UserCircle className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <SettingsIcon className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </header>
-              <main className="flex-1 p-6 bg-background">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/products" element={<ProductsSection />} />
-                  <Route path="/products/:id/edit" element={<EditProduct />} />
-                  <Route path="/inventory" element={<InventorySection />} />
-                  <Route path="/orders" element={<OrdersSection />} />
-                  <Route path="/channels" element={<ChannelsSection />} />
-                  <Route path="/analytics" element={<AnalyticsSection />} />
-                  <Route path="/users" element={<UserManagement />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="/login"
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <Login />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected routes */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppContent />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

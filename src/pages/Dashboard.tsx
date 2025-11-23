@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { StatCard } from "@/components/Dashboard/StatCard";
-import { Package, ShoppingCart, DollarSign, TrendingUp, Store } from "lucide-react";
+import { Package, ShoppingCart, DollarSign, TrendingUp, Store, RefreshCw, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCurrency } from "@/hooks/useCurrency";
 import {
   Table,
   TableBody,
@@ -11,57 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-interface Order {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  marketplaces?: { name: string };
-  status: string;
-  total: number;
-}
-
-interface InventoryItem {
-  products?: { name: string };
-  marketplaces?: { name: string };
-  quantity: number;
-}
-// API functions for fetching data
-const fetchDashboardStats = async () => {
-  const response = await fetch('/api/dashboard/stats');
-  if (!response.ok) throw new Error('Failed to fetch dashboard stats');
-  return response.json();
-};
-
-const fetchRecentOrders = async () => {
-  const response = await fetch('/api/dashboard/recent-orders');
-  if (!response.ok) throw new Error('Failed to fetch recent orders');
-  return response.json();
-};
-
-const fetchLowStockProducts = async () => {
-  const response = await fetch('/api/dashboard/low-stock');
-  if (!response.ok) throw new Error('Failed to fetch low stock products');
-  return response.json();
-};
-
-const fetchOrderStatusData = async () => {
-  const response = await fetch('/api/dashboard/order-status');
-  if (!response.ok) throw new Error('Failed to fetch order status data');
-  return response.json();
-};
-
-const fetchChannelData = async () => {
-  const response = await fetch('/api/dashboard/channels');
-  if (!response.ok) throw new Error('Failed to fetch channel data');
-  return response.json();
-};
-
-const fetchSalesTrendData = async () => {
-  const response = await fetch('/api/dashboard/sales-trend');
-  if (!response.ok) throw new Error('Failed to fetch sales trend data');
-  return response.json();
-};
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   BarChart,
@@ -77,11 +29,21 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { apiClient } from "@/lib/api";
+import {
+  DashboardStats,
+  Order,
+  InventoryItem,
+  SalesTrendData,
+  ChannelData,
+  OrderStatusData
+} from "@/types/api";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
+  const { currencySymbol, formatCurrency } = useCurrency();
+  const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     activeOrders: 0,
     lowStockCount: 0,
@@ -89,98 +51,152 @@ export default function Dashboard() {
   });
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<InventoryItem[]>([]);
-  const [channelData, setChannelData] = useState<{ name: string; value: number }[]>([]);
-  const [orderStatusData, setOrderStatusData] = useState<{ name: string; value: number }[]>([]);
-  const [salesTrendData, setSalesTrendData] = useState<{ day: string; sales: number }[]>([]);
+  const [channelData, setChannelData] = useState<ChannelData[]>([]);
+  const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
+  const [salesTrendData, setSalesTrendData] = useState<SalesTrendData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isRetry = false) => {
     try {
-      // Fetch dashboard stats
-      const statsData = await fetchDashboardStats();
-      setStats({
-        totalProducts: statsData.totalProducts,
-        activeOrders: statsData.activeOrders,
-        lowStockCount: statsData.lowStockCount,
-        connectedChannels: statsData.connectedChannels,
-      });
+      if (isRetry) {
+        setRetrying(true);
+        setError(null);
+      } else {
+        setLoading(true);
+      }
 
-      // Fetch recent orders
-      const orders = await fetchRecentOrders();
-      setRecentOrders(orders);
+      // Fetch all dashboard data in parallel for better performance
+      const [
+        statsData,
+        orders,
+        inventory,
+        orderStatusResult,
+        channelResult,
+        salesTrendResult
+      ] = await Promise.allSettled([
+        apiClient.getDashboardStats(),
+        apiClient.getRecentOrders(),
+        apiClient.getLowStockProducts(),
+        apiClient.getOrderStatusData(),
+        apiClient.getChannelData(),
+        apiClient.getSalesTrendData(),
+      ]);
 
-      // Fetch low stock products
-      const inventory = await fetchLowStockProducts();
-      setLowStockProducts(inventory);
+      // Handle results
+      if (statsData.status === 'fulfilled') {
+        setStats(statsData.value);
+      }
 
-      // Fetch order status data
-      const orderStatusResult = await fetchOrderStatusData();
-      setOrderStatusData(
-        orderStatusResult.map((item: { status: string; count: string }) => ({
-          name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-          value: parseInt(item.count)
-        }))
-      );
+      if (orders.status === 'fulfilled') {
+        setRecentOrders(orders.value);
+      }
 
-      // Fetch channel data
-      const channelResult = await fetchChannelData();
-      setChannelData(
-        channelResult.map((item: { name: string; order_count: string }) => ({
-          name: item.name,
-          value: parseInt(item.order_count)
-        }))
-      );
+      if (inventory.status === 'fulfilled') {
+        setLowStockProducts(inventory.value);
+      }
 
-      // Fetch sales trend data
-      const salesTrendResult = await fetchSalesTrendData();
-      setSalesTrendData(
-        salesTrendResult.map((item: { day: string; sales: string }) => ({
-          day: item.day,
-          sales: parseFloat(item.sales)
-        }))
-      );
+      if (orderStatusResult.status === 'fulfilled') {
+        setOrderStatusData(orderStatusResult.value);
+      }
+
+      if (channelResult.status === 'fulfilled') {
+        setChannelData(channelResult.value);
+      }
+
+      if (salesTrendResult.status === 'fulfilled') {
+        setSalesTrendData(salesTrendResult.value);
+      }
+
+      // Check if any requests failed
+      const failedRequests = [statsData, orders, inventory, orderStatusResult, channelResult, salesTrendResult]
+        .filter(result => result.status === 'rejected');
+
+      if (failedRequests.length > 0) {
+        const errorMessage = failedRequests.length === 1
+          ? "Failed to load some dashboard data"
+          : `Failed to load ${failedRequests.length} data sections`;
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } else {
+        setError(null);
+      }
 
     } catch (error) {
-      toast.error("Failed to load dashboard data");
-      console.error(error);
+      const errorMessage = "Failed to load dashboard data";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Dashboard data fetch error:', error);
+    } finally {
+      setLoading(false);
+      setRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    fetchDashboardData(true);
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back! Here's your inventory overview.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Welcome back! Here's your inventory overview.</p>
+        </div>
+        {(error || retrying) && (
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
+            disabled={retrying}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+            {retrying ? 'Retrying...' : 'Retry'}
+          </Button>
+        )}
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Some data may not be displayed correctly.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Products"
-          value={stats.totalProducts.toString()}
+          value={loading ? "..." : stats.totalProducts.toString()}
           change="+12% from last month"
           icon={Package}
           trend="up"
         />
         <StatCard
           title="Active Orders"
-          value={stats.activeOrders.toString()}
+          value={loading ? "..." : stats.activeOrders.toString()}
           change="+8% from last week"
           icon={ShoppingCart}
           trend="up"
         />
         <StatCard
           title="Low Stock Items"
-          value={stats.lowStockCount.toString()}
+          value={loading ? "..." : stats.lowStockCount.toString()}
           change="Need attention"
           icon={TrendingUp}
           trend="down"
         />
         <StatCard
           title="Connected Channels"
-          value={stats.connectedChannels.toString()}
+          value={loading ? "..." : stats.connectedChannels.toString()}
           change={stats.connectedChannels > 0 ? "Active" : "Add channels"}
           icon={Store}
           trend="up"
@@ -324,7 +340,7 @@ export default function Dashboard() {
                         {order.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">${order.total}</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(order.total)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
