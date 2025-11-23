@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { StatCard } from "@/components/Dashboard/StatCard";
+import { StatCardSkeleton, ChartSkeleton } from "@/components/ui/skeleton-loader";
 import { Package, ShoppingCart, DollarSign, TrendingUp, Store, RefreshCw, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -143,8 +145,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        className="flex items-center justify-between"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your inventory overview.</p>
@@ -161,7 +173,7 @@ export default function Dashboard() {
             {retrying ? 'Retrying...' : 'Retry'}
           </Button>
         )}
-      </div>
+      </motion.div>
 
       {error && (
         <Alert variant="destructive">
@@ -172,78 +184,145 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Products"
-          value={loading ? "..." : stats.totalProducts.toString()}
-          change="+12% from last month"
-          icon={Package}
-          trend="up"
-        />
-        <StatCard
-          title="Active Orders"
-          value={loading ? "..." : stats.activeOrders.toString()}
-          change="+8% from last week"
-          icon={ShoppingCart}
-          trend="up"
-        />
-        <StatCard
-          title="Low Stock Items"
-          value={loading ? "..." : stats.lowStockCount.toString()}
-          change="Need attention"
-          icon={TrendingUp}
-          trend="down"
-        />
-        <StatCard
-          title="Connected Channels"
-          value={loading ? "..." : stats.connectedChannels.toString()}
-          change={stats.connectedChannels > 0 ? "Active" : "Add channels"}
-          icon={Store}
-          trend="up"
-        />
-      </div>
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.1
+            }
+          }
+        }}
+      >
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <StatCard
+                title="Total Products"
+                value={stats.totalProducts}
+                change="+12% from last month"
+                icon={Package}
+                trend="up"
+              />
+            </motion.div>
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <StatCard
+                title="Active Orders"
+                value={stats.activeOrders}
+                change="+8% from last week"
+                icon={ShoppingCart}
+                trend="up"
+              />
+            </motion.div>
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <StatCard
+                title="Low Stock Items"
+                value={stats.lowStockCount}
+                change="Need attention"
+                icon={TrendingUp}
+                trend="down"
+              />
+            </motion.div>
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              transition={{ duration: 0.5 }}
+            >
+              <StatCard
+                title="Connected Channels"
+                value={stats.connectedChannels}
+                change={stats.connectedChannels > 0 ? "Active" : "Add channels"}
+                icon={Store}
+                trend="up"
+              />
+            </motion.div>
+          </>
+        )}
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales Trend (Last 7 Days)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesTrendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Orders by Channel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {channelData.length === 0 ? (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No channel data available
-              </div>
-            ) : (
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+          <Card className="transition-shadow duration-300 hover:shadow-lg">
+            <CardHeader>
+              <CardTitle>Sales Trend (Last 7 Days)</CardTitle>
+            </CardHeader>
+            <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={channelData}>
+                <LineChart data={salesTrendData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
+                  <XAxis dataKey="day" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#3b82f6" />
-                </BarChart>
+                  <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
+                </LineChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+          <Card className="transition-shadow duration-300 hover:shadow-lg">
+            <CardHeader>
+              <CardTitle>Orders by Channel</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <ChartSkeleton />
+              ) : channelData.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No channel data available
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={channelData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -348,6 +427,6 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }
