@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Suspense, lazy } from 'react';
 import { SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "@/shared/components";
 import { User, Settings as SettingsIcon, LogOut, UserCircle } from "lucide-react";
@@ -17,15 +18,27 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { AuthProvider, useAuth } from "@/providers";
 import { ProtectedRoute } from "@/shared/components";
-import { Dashboard } from "@/features/dashboard";
-import { ProductList, AddProduct, Categories, BulkUpload, EditProduct } from "@/features/products";
-import { StockLevels, LowStock, StockAdjustments } from "@/features/inventory";
-import { Orders, PendingOrders, ShippedOrders, Returns } from "@/features/orders";
-import { Channels, AddChannel, SyncSettings } from "@/features/channels";
-import { Analytics, PerformanceAnalytics } from "@/features/analytics";
-import { Settings } from "@/features/settings";
-import { Login } from "@/features/auth";
-import { UserManagement } from "@/features/users";
+const Dashboard = lazy(() => import('@/features/dashboard').then(m => ({ default: m.Dashboard })));
+const ProductList = lazy(() => import('@/features/products').then(m => ({ default: m.ProductList })));
+const AddProduct = lazy(() => import('@/features/products').then(m => ({ default: m.AddProduct })));
+const EditProduct = lazy(() => import('@/features/products').then(m => ({ default: m.EditProduct })));
+const Categories = lazy(() => import('@/features/products').then(m => ({ default: m.Categories })));
+const BulkUpload = lazy(() => import('@/features/products').then(m => ({ default: m.BulkUpload })));
+const StockLevels = lazy(() => import('@/features/inventory').then(m => ({ default: m.StockLevels })));
+const LowStock = lazy(() => import('@/features/inventory').then(m => ({ default: m.LowStock })));
+const StockAdjustments = lazy(() => import('@/features/inventory').then(m => ({ default: m.StockAdjustments })));
+const Orders = lazy(() => import('@/features/orders').then(m => ({ default: m.Orders })));
+const PendingOrders = lazy(() => import('@/features/orders').then(m => ({ default: m.PendingOrders })));
+const ShippedOrders = lazy(() => import('@/features/orders').then(m => ({ default: m.ShippedOrders })));
+const Returns = lazy(() => import('@/features/orders').then(m => ({ default: m.Returns })));
+const Channels = lazy(() => import('@/features/channels').then(m => ({ default: m.Channels })));
+const AddChannel = lazy(() => import('@/features/channels').then(m => ({ default: m.AddChannel })));
+const SyncSettings = lazy(() => import('@/features/channels').then(m => ({ default: m.SyncSettings })));
+const Analytics = lazy(() => import('@/features/analytics').then(m => ({ default: m.Analytics })));
+const PerformanceAnalytics = lazy(() => import('@/features/analytics').then(m => ({ default: m.PerformanceAnalytics })));
+const Settings = lazy(() => import('@/features/settings').then(m => ({ default: m.Settings })));
+const Login = lazy(() => import('@/features/auth').then(m => ({ default: m.Login })));
+const UserManagement = lazy(() => import('@/features/users').then(m => ({ default: m.UserManagement })));
 import { NotificationBell, NotFound } from "@/shared/components";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Loader2 } from "lucide-react";
@@ -84,7 +97,8 @@ function AppContent() {
             </DropdownMenu>
           </header>
           <main className="flex-1 p-6 bg-background">
-            <Routes>
+            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="animate-spin" /></div>}>
+              <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/products" element={<ProductsSection />} />
@@ -102,7 +116,8 @@ function AppContent() {
               <Route path="/users" element={<UserManagement />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </main>
         </div>
       </div>
@@ -217,7 +232,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="animate-spin" /></div>}>
+            <Routes>
             {/* Public routes */}
             <Route
               path="/login"
@@ -237,7 +253,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
