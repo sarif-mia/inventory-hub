@@ -49,7 +49,7 @@ export interface Supplier {
 export interface Marketplace {
   id: string;
   name: string;
-  type: 'shopify' | 'amazon' | 'ebay' | 'etsy' | 'walmart';
+  type: 'shopify' | 'amazon' | 'ebay' | 'etsy' | 'walmart' | 'myntra';
   status: 'active' | 'inactive' | 'error';
   api_key?: string;
   store_url?: string;
@@ -169,8 +169,9 @@ export type UpdateCategoryData = Partial<CreateCategoryData>;
 
 export interface CreateMarketplaceData {
   name: string;
-  type: 'shopify' | 'amazon' | 'ebay' | 'etsy' | 'walmart';
+  type: 'shopify' | 'amazon' | 'ebay' | 'etsy' | 'walmart' | 'myntra';
   store_url?: string;
+  settings?: Record<string, any>;
 }
 
 export interface StockAdjustmentData {

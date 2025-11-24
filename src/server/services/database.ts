@@ -227,9 +227,9 @@ export class DatabaseService {
 
   async createMarketplace(marketplaceData: CreateMarketplaceData): Promise<Marketplace> {
     const result = await this.query<Marketplace>(
-      `INSERT INTO marketplaces (name, type, store_url, status, connected_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW()) RETURNING *`,
-      [marketplaceData.name, marketplaceData.type, marketplaceData.store_url, 'active']
+      `INSERT INTO marketplaces (name, type, store_url, status, settings, connected_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), NOW()) RETURNING *`,
+      [marketplaceData.name, marketplaceData.type, marketplaceData.store_url, 'active', marketplaceData.settings ? JSON.stringify(marketplaceData.settings) : '{}']
     );
     return result[0];
   }

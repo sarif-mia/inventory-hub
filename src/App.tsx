@@ -1,12 +1,12 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/shared/components/ui/toaster";
+import { Toaster as Sonner } from "@/shared/components/ui/sonner";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
+import { AppSidebar } from "@/shared/components";
 import { User, Settings as SettingsIcon, LogOut, UserCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,33 +14,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Dashboard from "./pages/Dashboard";
-import ProductList from "./pages/ProductList";
-import AddProduct from "./pages/AddProduct";
-import Categories from "./pages/Categories";
-import BulkUpload from "./pages/BulkUpload";
-import StockLevels from "./pages/StockLevels";
-import LowStock from "./pages/LowStock";
-import Orders from "./pages/Orders";
-import PendingOrders from "./pages/PendingOrders";
-import ShippedOrders from "./pages/ShippedOrders";
-import Channels from "./pages/Channels";
-import AddChannel from "./pages/AddChannel";
-import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
-import EditProduct from "./pages/EditProduct";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import { NotificationBell } from "./components/NotificationBell";
-import StockAdjustments from "./pages/StockAdjustments";
-import Returns from "./pages/Returns";
-import SyncSettings from "./pages/SyncSettings";
-import UserManagement from "./pages/UserManagement";
-import PerformanceAnalytics from "./pages/PerformanceAnalytics";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/shared/components/ui/dropdown-menu";
+import { AuthProvider, useAuth } from "@/providers";
+import { ProtectedRoute } from "@/shared/components";
+import { Dashboard } from "@/features/dashboard";
+import { ProductList, AddProduct, Categories, BulkUpload, EditProduct } from "@/features/products";
+import { StockLevels, LowStock, StockAdjustments } from "@/features/inventory";
+import { Orders, PendingOrders, ShippedOrders, Returns } from "@/features/orders";
+import { Channels, AddChannel, SyncSettings } from "@/features/channels";
+import { Analytics, PerformanceAnalytics } from "@/features/analytics";
+import { Settings } from "@/features/settings";
+import { Login } from "@/features/auth";
+import { UserManagement } from "@/features/users";
+import { NotificationBell, NotFound } from "@/shared/components";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
