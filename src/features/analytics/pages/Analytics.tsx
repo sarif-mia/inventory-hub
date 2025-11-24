@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { Package, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { apiClient } from "@/shared/utils/api";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -27,7 +28,21 @@ export default function Analytics() {
     topProducts: { name: string; quantity: number; revenue: number }[];
     marketplaceData: { name: string; orders: number; revenue: number }[];
     orderStatusData: { name: string; value: number }[];
-    summary: { totalRevenue: number; totalOrders: number; topProduct: string; topProductSales: number };
+    inventoryHealth?: {
+      total_inventory_items: number | string;
+      in_stock_count: number | string;
+      low_stock_count: number | string;
+      out_of_stock_count: number | string;
+      avg_stock_level: number | string;
+    };
+    summary: {
+      totalRevenue: number;
+      totalOrders: number;
+      topProduct: string;
+      topProductSales: number;
+      avgOrderValue?: number;
+      inventoryEfficiency?: number;
+    };
   } | null>(null);
 
   useEffect(() => {
@@ -37,11 +52,7 @@ export default function Analytics() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics');
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics data');
-      }
-      const data = await response.json();
+      const data = await apiClient.getAnalytics();
       setAnalyticsData(data);
     } catch (error) {
       toast.error("Failed to load analytics data");
@@ -92,7 +103,9 @@ export default function Analytics() {
             <div className="text-2xl font-bold">
               ${analyticsData.summary.totalRevenue.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              {analyticsData.summary.totalOrders > 0 ? 'From completed orders' : 'No revenue yet'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -104,31 +117,37 @@ export default function Analytics() {
             <div className="text-2xl font-bold">
               {analyticsData.summary.totalOrders}
             </div>
-            <p className="text-xs text-muted-foreground">+8% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Product</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {analyticsData.summary.topProduct}
-            </div>
             <p className="text-xs text-muted-foreground">
-              {analyticsData.summary.topProductSales} sold
+              {analyticsData.summary.totalOrders > 0 ? 'Completed orders' : 'No orders yet'}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24.5%</div>
-            <p className="text-xs text-muted-foreground">+2.1% from last month</p>
+            <div className="text-2xl font-bold">
+              ${analyticsData.summary.avgOrderValue ? analyticsData.summary.avgOrderValue.toFixed(2) : '0.00'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analyticsData.summary.totalOrders > 0 ? 'Per order average' : 'No orders yet'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inventory Health</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analyticsData.summary.inventoryEfficiency || 0}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analyticsData.inventoryHealth ? `${analyticsData.inventoryHealth.in_stock_count} of ${analyticsData.inventoryHealth.total_inventory_items} in stock` : 'No inventory data'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -172,6 +191,75 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
+            <CardTitle>Inventory Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {analyticsData.inventoryHealth ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">In Stock</span>
+                  <span className="text-sm text-green-600">{analyticsData.inventoryHealth.in_stock_count}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Low Stock</span>
+                  <span className="text-sm text-yellow-600">{analyticsData.inventoryHealth.low_stock_count}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Out of Stock</span>
+                  <span className="text-sm text-red-600">{analyticsData.inventoryHealth.out_of_stock_count}</span>
+                </div>
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Average Stock Level</span>
+                    <span className="text-sm">{typeof analyticsData.inventoryHealth.avg_stock_level === 'number' ? analyticsData.inventoryHealth.avg_stock_level.toFixed(1) : analyticsData.inventoryHealth.avg_stock_level}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No inventory data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Status Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {analyticsData.orderStatusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={analyticsData.orderStatusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {analyticsData.orderStatusData.map((entry, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                No orders to display
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {analyticsData.topProducts.length > 0 && (
+        <Card>
+          <CardHeader>
             <CardTitle>Top Selling Products</CardTitle>
           </CardHeader>
           <CardContent>
@@ -186,34 +274,7 @@ export default function Analytics() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Status Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={analyticsData.orderStatusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {analyticsData.orderStatusData.map((entry, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      )}
     </div>
   );
 }

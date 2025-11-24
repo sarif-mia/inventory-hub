@@ -369,15 +369,28 @@ export default function Dashboard() {
               </p>
             ) : (
               <div className="space-y-4">
-                {lowStockProducts.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{item.products?.name ?? ''}</p>
-                      <p className="text-sm text-muted-foreground">{item.marketplaces?.name ?? ''}</p>
+                {lowStockProducts.slice(0, 5).map((item, index) => {
+                  // Support multiple possible shapes from backend: prefer explicit fields, then nested objects
+                  const productName = (item as any).product_name || (item as any).products?.name || (item as any).products?.title || (item as any).name || 'Unknown Product';
+                  const marketplaceName = (item as any).marketplace_name || (item as any).marketplaces?.name || (item as any).marketplace || 'Unknown Channel';
+
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm">{productName}</p>
+                        <p className="text-xs text-muted-foreground">{marketplaceName}</p>
+                      </div>
+                      <Badge variant={item.quantity === 0 ? "destructive" : "secondary"} className="ml-2 flex-shrink-0">
+                        {item.quantity === 0 ? 'Out of stock' : `${item.quantity} left`}
+                      </Badge>
                     </div>
-                    <Badge variant="destructive">{item.quantity} left</Badge>
-                  </div>
-                ))}
+                  );
+                })}
+                {lowStockProducts.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center pt-2">
+                    And {lowStockProducts.length - 5} more items need attention
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
@@ -409,7 +422,7 @@ export default function Dashboard() {
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.order_number}</TableCell>
                     <TableCell>{order.customer_name}</TableCell>
-                    <TableCell className="text-muted-foreground">{order.marketplaces?.name ?? ''}</TableCell>
+                    <TableCell className="text-muted-foreground">{(order as any).marketplace_name ?? 'Shopify Store'}</TableCell>
                     <TableCell>
                       <Badge variant={
                         order.status === "delivered" ? "default" :

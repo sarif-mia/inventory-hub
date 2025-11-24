@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
-import { Plus, CheckCircle2, XCircle, RefreshCw, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/shared/components/ui/alert-dialog";
+import { Plus, CheckCircle2, XCircle, RefreshCw, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/shared/utils/api";
@@ -45,6 +46,22 @@ export default function Channels() {
 
   const handleRetry = () => {
     fetchMarketplaces(true);
+  };
+
+  const handleDeleteMarketplace = async (marketplaceId: string, marketplaceName: string) => {
+    try {
+      await apiClient.deleteMarketplace(marketplaceId);
+      setMarketplaces(prev => prev.filter(m => m.id !== marketplaceId));
+      toast.success(`Successfully disconnected ${marketplaceName}`);
+
+      // Force page refresh to clear any cached data in other components
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Delete marketplace error:', error);
+      toast.error(`Failed to disconnect ${marketplaceName}`);
+    }
   };
 
   const availableChannels = [
@@ -122,7 +139,30 @@ export default function Channels() {
                             </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">Settings</Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Disconnect Channel</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to disconnect {marketplace.name}? This action cannot be undone and will remove all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteMarketplace(marketplace.id, marketplace.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Disconnect
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardHeader>
                     <CardContent>

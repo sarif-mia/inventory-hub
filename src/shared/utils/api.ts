@@ -24,7 +24,7 @@ import {
   CategoryFormData,
   MarketplaceFormData,
   StockAdjustmentFormData
-} from '@/types/api';
+} from '@/shared/types/api';
 
 // Base API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -118,13 +118,24 @@ class ApiClient {
   }
 
   async getOrderStatusData(): Promise<OrderStatusData[]> {
-    const response = await this.request<Array<{ status: string; count: number }>>('/api/dashboard/order-status');
+    // Accept multiple possible backend shapes and normalize to { name, value }
+    const response = await this.request<any[]>('/api/dashboard/order-status');
     if (!response) return [];
 
-    return response.map((item) => ({
-      name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-      value: item.count
-    }));
+    return response
+      .map((item: any) => {
+        const rawName = item.name ?? item.status ?? item.status_name ?? item.label ?? 'Unknown';
+        const name = typeof rawName === 'string'
+          ? rawName.charAt(0).toUpperCase() + rawName.slice(1)
+          : String(rawName);
+
+        const rawValue = item.value ?? item.count ?? item.total ?? item.orders ?? 0;
+        const value = Number(rawValue) || 0;
+
+        return { name, value } as OrderStatusData;
+      })
+      // Filter out entries with non-numeric values (just in case)
+      .filter((entry) => typeof entry.value === 'number');
   }
 
   async getChannelData(): Promise<ChannelData[]> {
@@ -300,6 +311,14 @@ class ApiClient {
       method: 'POST',
     });
     if (!response) throw new Error('Failed to sync marketplace');
+    return response;
+  }
+
+  async deleteMarketplace(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.request<{ success: boolean; message: string }>(`/api/marketplaces/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response) throw new Error('Failed to delete marketplace');
     return response;
   }
 

@@ -97,11 +97,25 @@ export class DatabaseService {
   }
 
   async getRecentOrders(): Promise<Order[]> {
-    return this.query<Order>('SELECT * FROM orders ORDER BY created_at DESC LIMIT 5');
+    return this.query<Order>(`
+      SELECT o.*, m.name as marketplace_name
+      FROM orders o
+      LEFT JOIN marketplaces m ON o.marketplace_id = m.id
+      ORDER BY o.created_at DESC
+      LIMIT 5
+    `);
   }
 
   async getLowStockProducts(): Promise<Inventory[]> {
-    return this.query<Inventory>("SELECT * FROM inventory WHERE status = 'low_stock' LIMIT 5");
+    return this.query<Inventory>(`
+      SELECT i.*, p.name as product_name, p.sku, m.name as marketplace_name
+      FROM inventory i
+      JOIN products p ON i.product_id = p.id
+      JOIN marketplaces m ON i.marketplace_id = m.id
+      WHERE i.status = 'low_stock'
+      ORDER BY i.quantity ASC
+      LIMIT 5
+    `);
   }
 
   async getOrderStatusData(): Promise<OrderStatusCount[]> {
@@ -137,6 +151,10 @@ export class DatabaseService {
 
   async getProduct(id: string): Promise<Product | null> {
     return this.querySingle<Product>('SELECT * FROM products WHERE id = $1', [id]);
+  }
+
+  async getProductBySku(sku: string): Promise<Product | null> {
+    return this.querySingle<Product>('SELECT * FROM products WHERE sku = $1', [sku]);
   }
 
   async createProduct(productData: CreateProductData): Promise<Product> {
@@ -238,6 +256,45 @@ export class DatabaseService {
     await this.query('UPDATE marketplaces SET last_sync = NOW() WHERE id = $1', [id]);
   }
 
+  async deleteMarketplace(id: string): Promise<boolean> {
+    return this.withTransaction(async (client) => {
+      try {
+        console.log(`Starting deletion of marketplace ${id}`);
+
+        // First, delete related records that have RESTRICT constraints
+        // Delete stock adjustments for this marketplace
+        const stockAdjResult = await client.query('DELETE FROM stock_adjustments WHERE marketplace_id = $1', [id]);
+        console.log(`Deleted ${stockAdjResult.rowCount} stock adjustments`);
+
+        // Delete orders for this marketplace
+        const ordersResult = await client.query('DELETE FROM orders WHERE marketplace_id = $1', [id]);
+        console.log(`Deleted ${ordersResult.rowCount} orders`);
+
+        // Delete inventory records for this marketplace
+        const inventoryResult = await client.query('DELETE FROM inventory WHERE marketplace_id = $1', [id]);
+        console.log(`Deleted ${inventoryResult.rowCount} inventory records`);
+
+        // Delete products that no longer have any inventory records (orphaned products)
+        const orphanedProductsResult = await client.query(`
+          DELETE FROM products
+          WHERE id NOT IN (
+            SELECT DISTINCT product_id FROM inventory
+          )
+        `);
+        console.log(`Deleted ${orphanedProductsResult.rowCount} orphaned products`);
+
+        // Finally, delete the marketplace
+        const marketplaceResult = await client.query('DELETE FROM marketplaces WHERE id = $1', [id]);
+        console.log(`Deleted ${marketplaceResult.rowCount} marketplace`);
+
+        return (marketplaceResult.rowCount ?? 0) > 0;
+      } catch (error) {
+        console.error('Error during marketplace deletion:', error);
+        throw error;
+      }
+    });
+  }
+
   // Order operations
   async getOrders(): Promise<Order[]> {
     return this.query<Order>('SELECT * FROM orders ORDER BY created_at DESC');
@@ -245,6 +302,10 @@ export class DatabaseService {
 
   async getOrder(id: string): Promise<Order | null> {
     return this.querySingle<Order>('SELECT * FROM orders WHERE id = $1', [id]);
+  }
+
+  async getOrderByNumber(orderNumber: string): Promise<Order | null> {
+    return this.querySingle<Order>('SELECT * FROM orders WHERE order_number = $1', [orderNumber]);
   }
 
   async updateOrderStatus(id: string, status: Order['status']): Promise<Order | null> {
@@ -265,6 +326,68 @@ export class DatabaseService {
 
   async getReturns(): Promise<Order[]> {
     return this.query<Order>("SELECT * FROM orders WHERE status = 'returned' ORDER BY created_at DESC");
+  }
+
+  // Create order
+  async createOrder(orderData: {
+    order_number: string;
+    marketplace_id: string;
+    customer_name: string;
+    customer_email?: string;
+    customer_phone?: string;
+    shipping_address?: string;
+    status: Order['status'];
+    payment_status: Order['payment_status'];
+    subtotal: number;
+    tax: number;
+    shipping_cost: number;
+    total: number;
+    notes?: string;
+  }): Promise<Order> {
+    const result = await this.query<Order>(
+      `INSERT INTO orders (order_number, marketplace_id, customer_name, customer_email, customer_phone, shipping_address, status, payment_status, subtotal, tax, shipping_cost, total, notes, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+       RETURNING *`,
+      [
+        orderData.order_number,
+        orderData.marketplace_id,
+        orderData.customer_name,
+        orderData.customer_email,
+        orderData.customer_phone,
+        orderData.shipping_address,
+        orderData.status,
+        orderData.payment_status,
+        orderData.subtotal,
+        orderData.tax,
+        orderData.shipping_cost,
+        orderData.total,
+        orderData.notes
+      ]
+    );
+    return result[0];
+  }
+
+  // Create order item
+  async createOrderItem(orderItemData: {
+    order_id: string;
+    product_id: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+  }): Promise<OrderItem> {
+    const result = await this.query<OrderItem>(
+      `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING *`,
+      [
+        orderItemData.order_id,
+        orderItemData.product_id,
+        orderItemData.quantity,
+        orderItemData.unit_price,
+        orderItemData.total_price
+      ]
+    );
+    return result[0];
   }
 
   // Inventory operations
@@ -334,6 +457,34 @@ export class DatabaseService {
       LEFT JOIN marketplaces m ON sa.marketplace_id = m.id
       ORDER BY sa.created_at DESC
     `);
+  }
+
+  // Create or update inventory record
+  async upsertInventory(inventoryData: {
+    product_id: string;
+    marketplace_id: string;
+    quantity: number;
+    price: number;
+    low_stock_threshold?: number;
+    status: string;
+  }): Promise<void> {
+    await this.query(`
+      INSERT INTO inventory (product_id, marketplace_id, quantity, price, low_stock_threshold, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      ON CONFLICT (product_id, marketplace_id)
+      DO UPDATE SET
+        quantity = EXCLUDED.quantity,
+        price = EXCLUDED.price,
+        status = EXCLUDED.status,
+        updated_at = NOW()
+    `, [
+      inventoryData.product_id,
+      inventoryData.marketplace_id,
+      inventoryData.quantity,
+      inventoryData.price,
+      inventoryData.low_stock_threshold || 10,
+      inventoryData.status
+    ]);
   }
 
   // Bulk operations
@@ -441,8 +592,8 @@ export class DatabaseService {
 
     const salesData = salesResult.map(row => ({
       date: new Date(row.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      sales: Math.round(parseFloat(row.sales)),
-      orders: parseInt(row.order_count)
+      sales: Math.round(parseFloat(row.sales || '0')),
+      orders: parseInt(row.order_count || '0')
     }));
 
     // Get top products
@@ -459,8 +610,8 @@ export class DatabaseService {
 
     const topProducts = topProductsResult.map(row => ({
       name: row.name,
-      quantity: parseInt(row.quantity),
-      revenue: parseFloat(row.revenue)
+      quantity: parseInt(row.quantity || '0'),
+      revenue: parseFloat(row.revenue || '0')
     }));
 
     // Get marketplace data
@@ -473,16 +624,35 @@ export class DatabaseService {
 
     const marketplaceData = marketplaceResult.map(row => ({
       name: row.name,
-      orders: parseInt(row.orders),
-      revenue: parseFloat(row.revenue)
+      orders: parseInt(row.orders || '0'),
+      revenue: parseFloat(row.revenue || '0')
     }));
 
     // Get order status distribution
     const statusResult = await this.query('SELECT status, COUNT(*) as count FROM orders GROUP BY status');
     const orderStatusData = statusResult.map(row => ({
       name: row.status.charAt(0).toUpperCase() + row.status.slice(1),
-      value: parseInt(row.count)
+      value: parseInt(row.count || '0')
     }));
+
+    // Get inventory health metrics
+    const inventoryStats = await this.query(`
+      SELECT
+        COUNT(*) as total_inventory_items,
+        SUM(CASE WHEN status = 'in_stock' THEN 1 ELSE 0 END) as in_stock_count,
+        SUM(CASE WHEN status = 'low_stock' THEN 1 ELSE 0 END) as low_stock_count,
+        SUM(CASE WHEN status = 'out_of_stock' THEN 1 ELSE 0 END) as out_of_stock_count,
+        ROUND(AVG(quantity), 2) as avg_stock_level
+      FROM inventory
+    `);
+
+    const inventoryHealth = inventoryStats[0] || {
+      total_inventory_items: 0,
+      in_stock_count: 0,
+      low_stock_count: 0,
+      out_of_stock_count: 0,
+      avg_stock_level: 0
+    };
 
     // Get summary stats
     const totalRevenue = salesData.reduce((sum, item) => sum + item.sales, 0);
@@ -493,11 +663,15 @@ export class DatabaseService {
       topProducts,
       marketplaceData,
       orderStatusData,
+      inventoryHealth,
       summary: {
         totalRevenue,
         totalOrders,
         topProduct: topProducts.length > 0 ? topProducts[0].name : 'N/A',
-        topProductSales: topProducts.length > 0 ? topProducts[0].quantity : 0
+        topProductSales: topProducts.length > 0 ? topProducts[0].quantity : 0,
+        avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+        inventoryEfficiency: inventoryHealth.total_inventory_items > 0 ?
+          Math.round((inventoryHealth.in_stock_count / inventoryHealth.total_inventory_items) * 100) : 0
       }
     };
   }

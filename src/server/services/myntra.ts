@@ -261,7 +261,7 @@ export class MyntraService {
     }
 
     // Check if product exists
-    const existing = await databaseService.getProduct(productData.sku);
+    const existing = await databaseService.getProductBySku(productData.sku);
     if (existing) {
       console.log(`Updating existing product: ${productData.sku}`);
       // Update existing product
@@ -294,7 +294,7 @@ export class MyntraService {
       status: 'active' as const,
     };
 
-    const existing = await databaseService.getProduct(variantData.sku);
+    const existing = await databaseService.getProductBySku(variantData.sku);
     if (existing) {
       await databaseService.updateProduct(existing.id, variantData);
     } else {
@@ -470,7 +470,7 @@ export class MyntraService {
   // Process inventory item
   private async processInventoryItem(item: MyntraInventory): Promise<void> {
     // Find product by SKU
-    const product = await databaseService.getProduct(item.sku);
+    const product = await databaseService.getProductBySku(item.sku);
     if (!product) {
       throw new Error(`Product with SKU ${item.sku} not found`);
     }

@@ -14,6 +14,7 @@ import { MyntraService } from './services/myntra.js';
 
 // Import channels
 import { MyntraChannel } from './channels/myntra.js';
+import { ShopifyChannel } from './channels/shopify.js';
 
 // Import middleware
 import { authenticateToken } from './middleware/auth.js';
@@ -69,6 +70,36 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/orders/pending', authenticateToken, async (req, res) => {
+  try {
+    const orders = await databaseService.getPendingOrders();
+    res.json(orders);
+  } catch (error) {
+    console.error('Pending orders fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch pending orders' });
+  }
+});
+
+app.get('/api/orders/shipped', authenticateToken, async (req, res) => {
+  try {
+    const orders = await databaseService.getShippedOrders();
+    res.json(orders);
+  } catch (error) {
+    console.error('Shipped orders fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch shipped orders' });
+  }
+});
+
+app.get('/api/orders/returns', authenticateToken, async (req, res) => {
+  try {
+    const orders = await databaseService.getReturns();
+    res.json(orders);
+  } catch (error) {
+    console.error('Returns fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch returns' });
+  }
+});
+
 app.get('/api/inventory', authenticateToken, async (req, res) => {
   try {
     const inventory = await databaseService.getInventory();
@@ -100,6 +131,28 @@ app.post('/api/marketplaces', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/marketplaces/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const marketplace = await databaseService.getMarketplace(id);
+    
+    if (!marketplace) {
+      return res.status(404).json({ error: 'Marketplace not found' });
+    }
+
+    const deleted = await databaseService.deleteMarketplace(id);
+    
+    if (deleted) {
+      res.json({ success: true, message: 'Marketplace deleted successfully' });
+    } else {
+      res.status(500).json({ error: 'Failed to delete marketplace' });
+    }
+  } catch (error) {
+    console.error('Marketplace deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete marketplace' });
+  }
+});
+
 app.post('/api/sync/:id', authenticateToken, async (req, res) => {
   try {
     const marketplaceId = req.params.id;
@@ -110,10 +163,35 @@ app.post('/api/sync/:id', authenticateToken, async (req, res) => {
     }
 
     if (marketplace.type === 'shopify') {
-      // Shopify sync (existing implementation)
-      // This would call Shopify sync service
-      await databaseService.updateMarketplaceLastSync(marketplaceId);
-      res.json({ message: 'Shopify sync completed successfully' });
+      // Shopify sync
+      if (!marketplace.settings) {
+        return res.status(400).json({ error: 'Shopify credentials not configured' });
+      }
+
+      const settings = typeof marketplace.settings === 'string'
+        ? JSON.parse(marketplace.settings)
+        : marketplace.settings;
+
+      const shopifyChannel = new ShopifyChannel(marketplaceId, {
+        storeUrl: marketplace.store_url || '',
+        adminApiToken: settings.adminApiToken
+      });
+      const result = await shopifyChannel.sync();
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+          syncedCount: result.syncedCount,
+          errors: result.errors
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.message,
+          errors: result.errors
+        });
+      }
     } else if (marketplace.type === 'myntra') {
       // Myntra sync
       if (!marketplace.settings) {
