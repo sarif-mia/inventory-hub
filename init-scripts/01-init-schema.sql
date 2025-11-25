@@ -145,5 +145,3 @@ CREATE INDEX idx_orders_marketplace ON orders(marketplace_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_product ON order_items(product_id);
-
--- Sample marketplaces removed - only real connections should be added through the UI

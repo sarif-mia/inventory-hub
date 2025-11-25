@@ -87,7 +87,7 @@ export class ShopifyChannel {
 
       const results: SyncResult[] = [];
       let totalSynced = 0;
-      let allErrors: string[] = [];
+      const allErrors: string[] = [];
 
       // Get last sync time
       const marketplace = await databaseService.getMarketplace(this.marketplaceId);

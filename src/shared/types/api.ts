@@ -126,23 +126,55 @@ export interface AnalyticsData {
     date: string;
     sales: number;
     orders: number;
+    revenue: number;
+    profit: number;
   }>;
   topProducts: Array<{
     name: string;
     quantity: number;
     revenue: number;
+    profit: number;
+    growth: number;
   }>;
   marketplaceData: Array<{
     name: string;
     orders: number;
     revenue: number;
+    profit: number;
+    growth: number;
   }>;
   orderStatusData: OrderStatusData[];
   summary: {
     totalRevenue: number;
     totalOrders: number;
+    avgOrderValue: number;
+    inventoryEfficiency: number;
+    totalProfit: number;
+    revenueGrowth: number;
+    orderGrowth: number;
     topProduct: string;
     topProductSales: number;
+  };
+  productPerformance: Array<{
+    name: string;
+    sales: number;
+    revenue: number;
+    efficiency: number;
+    trend: 'up' | 'down' | 'stable';
+  }>;
+  channelComparison: Array<{
+    channel: string;
+    revenue: number;
+    orders: number;
+    aov: number;
+    conversion: number;
+  }>;
+  inventoryHealth: {
+    total_inventory_items: number;
+    in_stock_count: number;
+    low_stock_count: number;
+    out_of_stock_count: number;
+    avg_stock_level: number;
   };
 }
 

@@ -205,7 +205,7 @@ export class MyntraService {
       }
 
       let syncedCount = 0;
-      let errors: string[] = [];
+      const errors: string[] = [];
 
       for (const product of products) {
         try {
@@ -334,7 +334,7 @@ export class MyntraService {
       const data = await this.makeRequest(`/orders?${params.toString()}`);
 
       let syncedCount = 0;
-      let errors: string[] = [];
+      const errors: string[] = [];
 
       if (data.orders && Array.isArray(data.orders)) {
         console.log(`Found ${data.orders.length} orders to sync`);
@@ -432,7 +432,7 @@ export class MyntraService {
       const data = await this.makeRequest(`/inventory?${params.toString()}`);
 
       let syncedCount = 0;
-      let errors: string[] = [];
+      const errors: string[] = [];
 
       if (data.inventory && Array.isArray(data.inventory)) {
         console.log(`Found ${data.inventory.length} inventory items to sync`);

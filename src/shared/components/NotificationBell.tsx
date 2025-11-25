@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -26,9 +26,9 @@ export function NotificationBell() {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchNotifications]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
 
     try {
@@ -47,7 +47,7 @@ export function NotificationBell() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   const markAsRead = async (id: string) => {
     try {
