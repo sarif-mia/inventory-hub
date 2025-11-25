@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthTokens, LoginCredentials, RegisterData } from '@/shared/types';
-import { apiClient } from '@/shared/utils';
+import { apiClient } from '@/shared/utils/api';
 import { toast } from 'sonner';
 
 interface AuthContextType {

@@ -18,16 +18,6 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
-    } else {
-      // Clear notifications when not authenticated
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  }, [isAuthenticated, fetchNotifications]);
-
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
 
@@ -48,6 +38,16 @@ export function NotificationBell() {
       setLoading(false);
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    } else {
+      // Clear notifications when not authenticated
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     try {

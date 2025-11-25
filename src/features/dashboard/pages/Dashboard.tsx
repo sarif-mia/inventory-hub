@@ -31,7 +31,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { apiClient } from "@/shared/utils";
+import { apiClient } from "@/shared/utils/api";
 import {
   DashboardStats,
   Order,

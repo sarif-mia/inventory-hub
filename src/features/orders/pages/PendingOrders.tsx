@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { toast } from "sonner";
+import { apiClient } from "@/shared/utils/api";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 
 export default function PendingOrders() {
@@ -17,11 +18,7 @@ export default function PendingOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/orders/pending');
-      if (!response.ok) {
-        throw new Error('Failed to fetch pending orders');
-      }
-      const data = await response.json();
+      const data = await apiClient.getPendingOrders();
       setOrders(data);
     } catch (error: any) {
       toast.error("Failed to load orders");
@@ -33,16 +30,7 @@ export default function PendingOrders() {
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
+      await apiClient.updateOrderStatus(orderId, newStatus);
       toast.success("Order status updated");
       fetchOrders();
     } catch (error: any) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Badge } from "@/shared/components/ui/badge";
 import { toast } from "sonner";
+import { apiClient } from "@/shared/utils/api";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 
 export default function ShippedOrders() {
@@ -16,11 +17,7 @@ export default function ShippedOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/orders/shipped');
-      if (!response.ok) {
-        throw new Error('Failed to fetch shipped orders');
-      }
-      const data = await response.json();
+      const data = await apiClient.getShippedOrders();
       setOrders(data);
     } catch (error: any) {
       toast.error("Failed to load orders");

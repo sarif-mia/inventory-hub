@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/ui/table";
 import { Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { apiClient } from "@/shared/utils/api";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 
 interface ReturnOrder {
@@ -36,11 +37,7 @@ export default function Returns() {
     const fetchReturns = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/orders/returns');
-            if (!response.ok) {
-                throw new Error('Failed to fetch returns');
-            }
-            const data = await response.json();
+            const data = await apiClient.getReturns();
             setReturns(data);
         } catch (error) {
             toast.error("Failed to load returns");

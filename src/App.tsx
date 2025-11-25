@@ -18,7 +18,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { AuthProvider, useAuth } from "@/providers";
 import { ProtectedRoute } from "@/shared/components";
-const Dashboard = lazy(() => import('@/features/dashboard').then(m => ({ default: m.Dashboard })));
+import { Dashboard } from '@/features/dashboard';
 const ProductList = lazy(() => import('@/features/products').then(m => ({ default: m.ProductList })));
 const AddProduct = lazy(() => import('@/features/products').then(m => ({ default: m.AddProduct })));
 const EditProduct = lazy(() => import('@/features/products').then(m => ({ default: m.EditProduct })));

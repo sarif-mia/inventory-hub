@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/shared/utils";
-import CountUp from "react-countup";
 
 interface StatCardProps {
   title: string;
@@ -12,8 +11,6 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ title, value, change, icon: Icon, trend }: StatCardProps) => {
-  const isNumeric = typeof value === "number" || (typeof value === "string" && !isNaN(Number(value)));
-
   return (
     <Card className="transition-all duration-300 hover:shadow-lg hover:scale-105">
       <CardContent className="p-6">
@@ -21,15 +18,7 @@ export const StatCard = ({ title, value, change, icon: Icon, trend }: StatCardPr
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold mt-2">
-              {isNumeric ? (
-                <CountUp
-                  end={typeof value === "string" ? parseFloat(value) : value}
-                  duration={2}
-                  separator=","
-                />
-              ) : (
-                value
-              )}
+              {value}
             </p>
             <p className={cn(
               "text-xs mt-2 font-medium",
