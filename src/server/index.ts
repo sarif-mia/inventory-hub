@@ -10,6 +10,7 @@ import { databaseService } from './services/database.js';
 import dashboardRoutes from './routes/dashboard.js';
 import productsRoutes from './routes/products.js';
 import authRoutes from './routes/auth.js';
+import settingsRoutes from './routes/settings.js';
 
 // Import services
 import { MyntraService } from './services/myntra.js';
@@ -116,6 +117,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Implemented routes
 app.get('/api/categories', authenticateToken, async (req, res) => {

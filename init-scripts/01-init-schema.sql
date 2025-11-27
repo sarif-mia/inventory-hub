@@ -124,6 +124,21 @@ CREATE TABLE users (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- Create settings table
+CREATE TABLE settings (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  value TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Insert default settings
+INSERT INTO settings (key, value, description) VALUES
+('currency', 'USD', 'Default currency for the application'),
+('currency_symbol', '$', 'Currency symbol');
+
 -- Create notifications table
 CREATE TABLE notifications (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

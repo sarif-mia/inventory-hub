@@ -739,6 +739,25 @@ export class DatabaseService {
     return result.length > 0;
   }
 
+  // Settings operations
+  async getSettings(): Promise<Array<{ key: string; value: string; description: string }>> {
+    return this.query('SELECT key, value, description FROM settings ORDER BY key');
+  }
+
+  async getSetting(key: string): Promise<string | null> {
+    const result = await this.querySingle<{ value: string }>('SELECT value FROM settings WHERE key = $1', [key]);
+    return result?.value || null;
+  }
+
+  async updateSetting(key: string, value: string): Promise<void> {
+    await this.query(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+    `, [key, value]);
+  }
+
   // Close connection pool
   async close(): Promise<void> {
     await this.pool.end();

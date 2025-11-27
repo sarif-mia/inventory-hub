@@ -411,6 +411,28 @@ class ApiClient {
     return response;
   }
 
+  // Settings APIs
+  async getSettings(): Promise<Array<{ key: string; value: string; description: string }>> {
+    const response = await this.request<Array<{ key: string; value: string; description: string }>>('/api/settings');
+    return response || [];
+  }
+
+  async getSetting(key: string): Promise<string | null> {
+    try {
+      const response = await this.request<{ value: string }>(`/api/settings/${key}`);
+      return response.value;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async updateSetting(key: string, value: string): Promise<void> {
+    await this.request(`/api/settings/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value }),
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string; message: string }> {
     const response = await this.request<{ status: string; message: string }>('/api/health');

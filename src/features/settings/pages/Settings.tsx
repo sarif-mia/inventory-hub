@@ -1,10 +1,66 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { useToast } from "@/shared/hooks/use-toast";
+import { apiClient } from "@/shared/utils/api";
 
 export default function Settings() {
+  const { toast } = useToast();
+  const [currency, setCurrency] = useState<string>("USD");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const value = await apiClient.getSetting('currency');
+      if (value) {
+        setCurrency(value);
+      }
+    } catch (error) {
+      console.error('Failed to load currency setting:', error);
+      // Keep default USD
+    }
+  };
+
+  const updateCurrency = async (newCurrency: string) => {
+    setLoading(true);
+    try {
+      await apiClient.updateSetting('currency', newCurrency);
+      setCurrency(newCurrency);
+      toast({
+        title: "Success",
+        description: "Currency updated successfully",
+      });
+    } catch (error) {
+      console.error('Failed to update currency:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update currency",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currencies = [
+    { value: "USD", label: "US Dollar ($)", symbol: "$" },
+    { value: "EUR", label: "Euro (€)", symbol: "€" },
+    { value: "GBP", label: "British Pound (£)", symbol: "£" },
+    { value: "JPY", label: "Japanese Yen (¥)", symbol: "¥" },
+    { value: "BDT", label: "Bangladeshi Taka (৳)", symbol: "৳" },
+    { value: "INR", label: "Indian Rupee (₹)", symbol: "₹" },
+    { value: "CAD", label: "Canadian Dollar (C$)", symbol: "C$" },
+    { value: "AUD", label: "Australian Dollar (A$)", symbol: "A$" },
+  ];
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -37,6 +93,33 @@ export default function Settings() {
             <Input placeholder="Your Company Inc." />
           </div>
           <Button>Save Changes</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Currency Settings</CardTitle>
+          <CardDescription>Choose your preferred currency for the application</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currency-select">Currency</Label>
+            <Select value={currency} onValueChange={updateCurrency} disabled={loading}>
+              <SelectTrigger id="currency-select">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((curr) => (
+                  <SelectItem key={curr.value} value={curr.value}>
+                    {curr.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Current currency: {currencies.find(c => c.value === currency)?.symbol || '$'} ({currency})
+          </p>
         </CardContent>
       </Card>
 
